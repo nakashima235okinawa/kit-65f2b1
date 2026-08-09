@@ -152,11 +152,6 @@ function home(){
     <div class="mode" id="m-drill"><b>分野別ドリル</b><span class="muted">分野を選んで1問ずつ。答えるとすぐ解説とPGL参照が出ます。</span></div>
     <div class="mode" id="m-review"><b>間違い直し</b><span class="muted">直近で誤答した問題だけを再出題。正解するとリストから消えます。</span></div>
     <div class="mode" id="m-map"><b>弱点マップ</b><span class="muted">分野別の正答率。弱い分野の関連用語とPGLの読むべきページへ。</span></div>
-  </div>
-  <div class="card"><h2>学習データのバックアップ</h2>
-    <p class="muted" style="margin-bottom:10px">成績と解答途中の模試は、この端末のブラウザ内にのみ保存されます。端末やブラウザを変えると引き継がれません。ファイルに書き出しておくと、別の端末でも復元できます。</p>
-    <div class="navrow"><button id="bk-out">バックアップを書き出す</button><button id="bk-in">バックアップを読み込む</button></div>
-    <input type="file" id="bk-file" accept="application/json,.json" style="display:none">
   </div>`;
   if(mock){
     document.getElementById("r-go").onclick=()=>resumeMock();
@@ -166,28 +161,6 @@ function home(){
       }
     };
   }
-  document.getElementById("bk-out").onclick=()=>{
-    const data={v:1,at:new Date().toISOString(),stats:load(K_STATS,{}),hist:load(K_HIST,[]),mock:load(K_MOCK,null)};
-    const a=document.createElement("a");
-    a.href=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:"application/json"}));
-    a.download="itc-exam-backup-"+new Date().toISOString().slice(0,10)+".json";
-    document.body.appendChild(a); a.click(); a.remove();
-  };
-  document.getElementById("bk-in").onclick=()=>document.getElementById("bk-file").click();
-  document.getElementById("bk-file").onchange=(e)=>{
-    const f=e.target.files&&e.target.files[0]; if(!f)return;
-    const r=new FileReader();
-    r.onload=()=>{
-      try{
-        const d=JSON.parse(r.result);
-        if(d.stats){stats=d.stats; save(K_STATS,stats)}
-        if(d.hist){save(K_HIST,d.hist)}
-        if(d.mock){save(K_MOCK,d.mock)}else{localStorage.removeItem(K_MOCK)}
-        M=null; alert("バックアップを読み込みました。"); home();
-      }catch(err){ alert("このファイルは読み込めませんでした。書き出したJSONファイルを選んでください。") }
-    };
-    r.readAsText(f);
-  };
   document.getElementById("m-mock").onclick=()=>mock?resumeMock():confirmStart();
   document.getElementById("m-drill").onclick=()=>drillSelect();
   document.getElementById("m-review").onclick=()=>startReview();
