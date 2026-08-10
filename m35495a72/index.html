@@ -263,12 +263,8 @@ function gradeMock(timeup,partial){
     if(hit)ok++;
     (byNode[q.node]=byNode[q.node]||[0,0])[1]++;
     if(hit)byNode[q.node][0]++;
-    if(!partial && !a){
-      // 本番方式のみ: 未解答は不正解として成績に記録
-      const s=stats[q.id]=stats[q.id]||{o:0,x:0}; s.x++; s.last="x";
-    }
   });
-  save(K_STATS,stats);
+  // 未解答は模試スコア上のみ不正解扱い。問題別成績（弱点マップ・間違い直し）には記録しない。
   const res={answers:Object.assign({},M.answers),score:ok,total:target.length,byNode,timeup,partial,
              gradedIds:new Set(target.map(q=>q.id))};
   if(partial){
@@ -284,6 +280,7 @@ function gradeMock(timeup,partial){
 function resultView(res){
   const rows=Object.keys(res.byNode).sort((a,b)=>pct(...res.byNode[a])-pct(...res.byNode[b]));
   const missed=QS.filter(q=>res.gradedIds.has(q.id)&&res.answers[q.id]!==q.answer);
+  const unansweredCt=missed.filter(q=>!res.answers[q.id]).length;
   const weakNodes=rows.filter(n=>pct(...res.byNode[n])<60);
   const p=pct(res.score,res.total);
   app.innerHTML=`
@@ -291,7 +288,7 @@ function resultView(res){
     <div class="muted">${res.timeup?"時間切れで自動採点しました。":""}${res.partial?`途中採点（${res.total}問時点）— 模試は継続中。`:""}正答率 ${p}%</div></div></div>
   <div class="card"><h2>次の一手</h2>
     <div class="navrow" style="margin-top:4px">
-      ${missed.length?`<button class="primary" id="redo-miss">間違えた ${missed.length} 問をやり直す</button>`:`<span class="tagchip">全問正解！</span>`}
+      ${missed.length?`<button class="primary" id="redo-miss">${unansweredCt?`不正解・未解答の ${missed.length} 問を解き直す`:`間違えた ${missed.length} 問をやり直す`}</button>`:`<span class="tagchip">全問正解！</span>`}
       ${weakNodes.length?`<button id="redo-weak">苦手分野をまとめてドリル（${weakNodes.length}分野）</button>`:""}
     </div>
     ${weakNodes.length?`<p class="muted" style="margin-bottom:0">苦手分野 = 正答率60%未満: ${weakNodes.map(n=>NODES[n]||n).join("、")}</p>`:""}</div>
@@ -426,8 +423,17 @@ function weakMap(){
        <div class="bar"><i class="${d.a?barCls(p):""}" style="width:${d.a?p:0}%"></i></div>
        <span class="pct">${d.a?`${d.o}/${d.a}`:"未着手"}</span></div>`}).join("")}
    <div id="nodedetail" style="margin-top:14px"></div>
-   <div class="navrow"><button class="primary" id="tohome">ホームへ</button></div></div>`;
+   <div class="navrow"><button class="primary" id="tohome">ホームへ</button><div class="spacer"></div><button class="ghost" id="st-reset" style="font-size:12px;color:var(--sub)">学習履歴をリセット</button></div></div>`;
   document.getElementById("tohome").onclick=home;
+  document.getElementById("st-reset").onclick=()=>{
+    if(!confirm("分野別正答率・間違い直しリスト・模試履歴をすべて消去します。よろしいですか？\n（解答途中の模試があれば、選んだ解答自体は残ります）"))return;
+    localStorage.removeItem(K_STATS); localStorage.removeItem(K_HIST);
+    stats={};
+    const mk=load(K_MOCK,null);
+    if(mk){mk.rec={};save(K_MOCK,mk)}
+    if(M){M.rec={}}
+    weakMap();
+  };
   const wa=document.getElementById("wk-all");
   if(wa)wa.onclick=()=>startDrill(QS.filter(q=>weakNs.includes(q.node)),"苦手分野ドリル");
   app.querySelectorAll(".nm").forEach(el=>el.onclick=()=>{
