@@ -177,11 +177,24 @@ function confirmStart(){
 
 /* ---------------- 模試 ---------------- */
 let M=null;
+function recordMock(q,p){
+  const hit=(p===q.answer)?"o":"x";
+  const s=stats[q.id]=stats[q.id]||{o:0,x:0};
+  const prev=M.rec[q.id];
+  if(prev!==hit){
+    if(prev==="o")s.o=Math.max(0,s.o-1);
+    if(prev==="x")s.x=Math.max(0,s.x-1);
+    if(hit==="o")s.o++;else s.x++;
+    M.rec[q.id]=hit;
+  }
+  s.last=hit;
+  save(K_STATS,stats);
+}
 function startMock(){
-  M={idx:0,answers:{},flags:{},remain:MOCK_SEC,done:false};
+  M={idx:0,answers:{},flags:{},rec:{},remain:MOCK_SEC,done:false};
   save(K_MOCK,M); mockView();
 }
-function resumeMock(){ M=load(K_MOCK,null); if(!M){home();return} mockView(); }
+function resumeMock(){ M=load(K_MOCK,null); if(!M){home();return} M.rec=M.rec||{}; mockView(); }
 function mockTick(){
   M.remain--;
   if(M.remain%10===0) save(K_MOCK,M);
@@ -219,7 +232,7 @@ function renderMockQ(){
     <div class="grid">${QS.map((x,i)=>`<div class="cell ${M.answers[x.id]?"answered":""} ${M.flags[x.id]?"flagged":""} ${i===M.idx?"cur":""}" data-i="${i}">${i+1}</div>`).join("")}</div>
     <p class="muted" style="margin-bottom:0">解答済み ${Object.keys(M.answers).length}/100　⚑=見直しフラグ</p>
   </div>`;
-  app.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{M.answers[q.id]=b.dataset.p;save(K_MOCK,M);renderMockQ()});
+  app.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{const pp=b.dataset.p;M.answers[q.id]=pp;recordMock(q,pp);save(K_MOCK,M);renderMockQ()});
   document.getElementById("flag").onclick=()=>{if(M.flags[q.id])delete M.flags[q.id];else M.flags[q.id]=1;save(K_MOCK,M);renderMockQ()};
   document.getElementById("prev").onclick=()=>{M.idx--;save(K_MOCK,M);renderMockQ()};
   document.getElementById("next").onclick=()=>{M.idx++;save(K_MOCK,M);renderMockQ()};
@@ -230,10 +243,10 @@ function renderMockQ(){
     app.insertAdjacentHTML("beforeend",`<dialog id="gdlg"><h2>採点方法を選んでください</h2>
      <p class="muted">未解答が ${un} 問あります。</p>
      <div class="navrow" style="flex-direction:column;align-items:stretch">
-      <button class="primary" id="g-part">途中採点 — 解答済み ${100-un} 問だけで採点</button>
-      <button id="g-full">本番方式 — 未解答を不正解として100問で採点</button>
+      <button class="primary" id="g-part">途中採点 — 解答済み ${100-un} 問を採点（続きは後で再開）</button>
+      <button id="g-full">本番方式 — 未解答を不正解として100問で採点（模試を終了）</button>
       <button class="ghost" id="g-no">戻る</button></div>
-     <p class="muted" style="margin-bottom:0">途中採点では、未解答の問題は成績・間違い直しに影響しません。</p></dialog>`);
+     <p class="muted" style="margin-bottom:0">途中採点しても模試は終わりません。残りの問題は後日続きから解けます。</p></dialog>`);
     const d=document.getElementById("gdlg"); d.showModal();
     document.getElementById("g-no").onclick=()=>{d.close();d.remove()};
     document.getElementById("g-part").onclick=()=>{d.close();d.remove();gradeMock(false,true)};
@@ -250,16 +263,22 @@ function gradeMock(timeup,partial){
     if(hit)ok++;
     (byNode[q.node]=byNode[q.node]||[0,0])[1]++;
     if(hit)byNode[q.node][0]++;
-    const s=stats[q.id]=stats[q.id]||{o:0,x:0};
-    if(hit){s.o++;s.last="o"}else{s.x++;s.last="x"}
+    if(!partial && !a){
+      // 本番方式のみ: 未解答は不正解として成績に記録
+      const s=stats[q.id]=stats[q.id]||{o:0,x:0}; s.x++; s.last="x";
+    }
   });
   save(K_STATS,stats);
-  const hist=load(K_HIST,[]);
-  hist.push({date:new Date().toISOString().slice(0,10),score:ok,total:target.length,byNode});
-  save(K_HIST,hist);
-  const res={answers:M.answers,score:ok,total:target.length,byNode,timeup,partial,
+  const res={answers:Object.assign({},M.answers),score:ok,total:target.length,byNode,timeup,partial,
              gradedIds:new Set(target.map(q=>q.id))};
-  localStorage.removeItem(K_MOCK); M=null;
+  if(partial){
+    save(K_MOCK,M); // セッション継続 — 続きは後で再開できる
+  }else{
+    const hist=load(K_HIST,[]);
+    hist.push({date:new Date().toISOString().slice(0,10),score:ok,total:target.length,byNode});
+    save(K_HIST,hist);
+    localStorage.removeItem(K_MOCK); M=null;
+  }
   resultView(res);
 }
 function resultView(res){
@@ -269,7 +288,7 @@ function resultView(res){
   const p=pct(res.score,res.total);
   app.innerHTML=`
   <div class="card"><div class="score-hero"><div class="big">${res.score}<span class="of"> / ${res.total}</span></div>
-    <div class="muted">${res.timeup?"時間切れで自動採点しました。":""}${res.partial?`途中採点（${res.total}問時点）。`:""}正答率 ${p}%</div></div></div>
+    <div class="muted">${res.timeup?"時間切れで自動採点しました。":""}${res.partial?`途中採点（${res.total}問時点）— 模試は継続中。`:""}正答率 ${p}%</div></div></div>
   <div class="card"><h2>次の一手</h2>
     <div class="navrow" style="margin-top:4px">
       ${missed.length?`<button class="primary" id="redo-miss">間違えた ${missed.length} 問をやり直す</button>`:`<span class="tagchip">全問正解！</span>`}
@@ -286,7 +305,9 @@ function resultView(res){
       if(!res.gradedIds.has(q.id))return `<div class="cell" style="opacity:.45" data-i="${i}">${i+1}</div>`;
       const hit=res.answers[q.id]===q.answer;return `<div class="cell ${hit?"ok":"ng"}" data-i="${i}">${i+1}</div>`}).join("")}</div>
     <div id="revq" style="margin-top:14px"></div></div>
-  <div class="navrow"><button class="primary" id="tohome">ホームへ</button><button id="tomap">弱点マップを見る</button></div>`;
+  <div class="navrow">${res.partial?`<button class="primary" id="cont">模試の続きへ（残り ${100-res.gradedIds.size} 問）</button>`:""}<button class="${res.partial?"":"primary"}" id="tohome">ホームへ</button><button id="tomap">弱点マップを見る</button></div>`;
+  const cont=document.getElementById("cont");
+  if(cont)cont.onclick=()=>resumeMock();
   document.getElementById("tohome").onclick=home;
   document.getElementById("tomap").onclick=weakMap;
   const rm=document.getElementById("redo-miss");
