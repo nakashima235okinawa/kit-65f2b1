@@ -117,6 +117,7 @@ function pct(o,a){return a? Math.round(o/a*100):0}
 function barCls(p){return p>=80?"":p>=60?"mid":"low"}
 const app=document.getElementById("app");
 const STORAGE_OK=(function(){try{localStorage.setItem("__itc_t","1");localStorage.removeItem("__itc_t");return true}catch(e){return false}})();
+if(navigator.storage&&navigator.storage.persist){navigator.storage.persist().catch(()=>{})}
 if(!STORAGE_OK){
   const w=document.getElementById("swarn");
   w.style.display="block";
