@@ -31,7 +31,7 @@ button.ghost{background:transparent}
 button:disabled{opacity:.45;cursor:default}
 .modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
 .mode{border:1px solid var(--rule);border-radius:8px;background:#fff;padding:16px;cursor:pointer;transition:.12s}
-.mode:hover{border-color:var(--ai);box-shadow:0 2px 8px rgba(31,58,99,.12)}
+@media (hover:hover) and (pointer:fine){.mode:hover{border-color:var(--ai);box-shadow:0 2px 8px rgba(31,58,99,.12)}}
 .mode b{font-family:var(--serif);font-size:16px;color:var(--ai);display:block;margin-bottom:6px}
 .mode .muted{font-size:12px}
 .stat{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--sub)}
@@ -47,7 +47,7 @@ button:disabled{opacity:.45;cursor:default}
 .choice{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--rule);border-radius:6px;background:#fff;padding:10px 12px;cursor:pointer;text-align:left;font-size:14px;line-height:1.7}
 .choice .pos{font-family:var(--serif);color:var(--ai);font-weight:700;min-width:1.4em}
 .choice .tx{white-space:pre-wrap}
-.choice:hover{border-color:var(--ai)}
+@media (hover:hover) and (pointer:fine){.choice:hover{border-color:var(--ai)}}
 .choice.sel{border-color:var(--ai);background:#eef2f8;box-shadow:inset 0 0 0 1px var(--ai)}
 .choice.ok{border-color:var(--midori);background:#eaf3ee;box-shadow:inset 0 0 0 1px var(--midori)}
 .choice.ng{border-color:var(--shu);background:#faecea;box-shadow:inset 0 0 0 1px var(--shu)}
