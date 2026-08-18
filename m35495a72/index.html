@@ -142,7 +142,7 @@ function home(){
     <p class="muted" style="margin-bottom:10px">解答と結果はこの端末に保存されています。消えるのは下の「クリア」を押したときだけです。</p>
     <div class="navrow"><button class="primary" id="r-res">結果と解説を見る</button><button class="danger" id="r-clear">クリアして最初からやり直す</button></div></div>`:""}
   ${mock&&!mock.done?`<div class="card" style="border:2px solid var(--gold)"><h2>途中の模試があります</h2>
-    <p class="muted" style="margin-bottom:10px">解答済み <b>${mockAns}</b>/100問　${mock.timeup?"<b>時間切れ</b>（解答は続けられます）":`残り時間 <b>約${mockMin}分</b>`}　（この端末に自動保存されています）</p>
+    <p class="muted" style="margin-bottom:10px">解答済み <b>${mockAns}</b>/100問　${(()=>{const f=firstUnanswered(mock);return f>=0?`次は<b>問${f+1}</b>から　`:""})()}${mock.timeup?"<b>時間切れ</b>（解答は続けられます）":`残り時間 <b>約${mockMin}分</b>`}　（この端末に自動保存されています）</p>
     <div class="navrow"><button class="primary" id="r-go">続きから再開する</button><button class="danger" id="r-new">クリアして最初からやり直す</button></div></div>`:""}
   <div class="card"><h2>学習の現在地</h2>
     <div class="stat">
@@ -206,7 +206,15 @@ function startMock(){
   M={idx:0,answers:{},flags:{},rec:{},remain:MOCK_SEC,done:false};
   save(K_MOCK,M); mockView();
 }
-function resumeMock(){ M=load(K_MOCK,null); if(!M){home();return} M.rec=M.rec||{}; if(M.done){showSavedResult();return} mockView(); }
+function firstUnanswered(m){for(let i=0;i<QS.length;i++){if(!m.answers[QS[i].id])return i}return -1}
+function resumeMock(){
+  M=load(K_MOCK,null); if(!M){home();return}
+  M.rec=M.rec||{};
+  if(M.done){showSavedResult();return}
+  const fu=firstUnanswered(M);
+  if(fu>=0){M.idx=fu;save(K_MOCK,M)}  // 続きから＝最初の未解答問題へ
+  mockView();
+}
 function showSavedResult(){
   let ok=0; const byNode={};
   QS.forEach(q=>{
@@ -330,7 +338,7 @@ function resultView(res){
       if(!res.gradedIds.has(q.id))return `<div class="cell" style="opacity:.45" data-i="${i}">${i+1}</div>`;
       const hit=res.answers[q.id]===q.answer;return `<div class="cell ${hit?"ok":"ng"}" data-i="${i}">${i+1}</div>`}).join("")}</div>
     <div id="revq" style="margin-top:14px"></div></div>
-  <div class="navrow">${res.partial?`<button class="primary" id="cont">模試の続きへ（残り ${100-res.gradedIds.size} 問）</button>`:""}<button class="${res.partial?"":"primary"}" id="tohome">ホームへ</button><button id="tomap">弱点マップを見る</button></div>`;
+  <div class="navrow">${res.partial?`<button class="primary" id="cont">模試の続きへ（問${(()=>{const m=load(K_MOCK,null);const f=m?firstUnanswered(m):-1;return f>=0?f+1:"—"})()}から・残り ${100-res.gradedIds.size} 問）</button>`:""}<button class="${res.partial?"":"primary"}" id="tohome">ホームへ</button><button id="tomap">弱点マップを見る</button></div>`;
   const cont=document.getElementById("cont");
   if(cont)cont.onclick=()=>resumeMock();
   document.getElementById("tohome").onclick=home;
