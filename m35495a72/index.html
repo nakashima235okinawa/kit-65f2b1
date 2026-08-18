@@ -98,7 +98,7 @@ dialog::backdrop{background:rgba(23,32,43,.4)}
 <footer>
   本アプリは、ITコーディネータ協会（ITCA）とは無関係の非公式学習教材です。PGL Ver.4.0本文の転載はありません。
   解説中の「PGL p.◯◯」は、お手元の『ITコーディネータ プロセスガイドライン Ver.4.0』の該当ページを示す参照です。
-  成績データはこの端末のブラウザ内（localStorage）にのみ保存され、外部送信は行いません。
+  成績データはこの端末のブラウザ内（localStorage）にのみ保存され、外部送信は行いません。<span style="opacity:.55">　app v1.5</span>
 </footer>
 
 <script>
@@ -138,9 +138,12 @@ function home(){
   const mockAns=mock?Object.keys(mock.answers||{}).length:0;
   const mockMin=mock?Math.max(0,Math.floor((mock.remain||0)/60)):0;
   app.innerHTML=`
-  ${mock?`<div class="card" style="border:2px solid var(--gold)"><h2>中断中の模試があります</h2>
-    <p class="muted" style="margin-bottom:10px">解答済み <b>${mockAns}</b>/100問　残り時間 <b>約${mockMin}分</b>　（この端末に自動保存されています）</p>
-    <div class="navrow"><button class="primary" id="r-go">続きから再開する</button><button class="danger" id="r-new">破棄して最初から</button></div></div>`:""}
+  ${mock&&mock.done?`<div class="card" style="border:2px solid var(--midori)"><h2>採点済みの模試があります</h2>
+    <p class="muted" style="margin-bottom:10px">解答と結果はこの端末に保存されています。消えるのは下の「クリア」を押したときだけです。</p>
+    <div class="navrow"><button class="primary" id="r-res">結果と解説を見る</button><button class="danger" id="r-clear">クリアして最初からやり直す</button></div></div>`:""}
+  ${mock&&!mock.done?`<div class="card" style="border:2px solid var(--gold)"><h2>途中の模試があります</h2>
+    <p class="muted" style="margin-bottom:10px">解答済み <b>${mockAns}</b>/100問　${mock.timeup?"<b>時間切れ</b>（解答は続けられます）":`残り時間 <b>約${mockMin}分</b>`}　（この端末に自動保存されています）</p>
+    <div class="navrow"><button class="primary" id="r-go">続きから再開する</button><button class="danger" id="r-new">クリアして最初からやり直す</button></div></div>`:""}
   <div class="card"><h2>学習の現在地</h2>
     <div class="stat">
       <span>解答済み <b>${answered}</b><span class="muted">/100問</span></span>
@@ -154,10 +157,18 @@ function home(){
     <div class="mode" id="m-review"><b>間違い直し</b><span class="muted">直近で誤答した問題だけを再出題。正解するとリストから消えます。</span></div>
     <div class="mode" id="m-map"><b>弱点マップ</b><span class="muted">分野別の正答率。弱い分野の関連用語とPGLの読むべきページへ。</span></div>
   </div>`;
-  if(mock){
+  if(mock&&mock.done){
+    document.getElementById("r-res").onclick=()=>resumeMock();
+    document.getElementById("r-clear").onclick=()=>{
+      if(confirm("採点済みの模試をクリアして、最初からやり直せる状態にします。よろしいですか？")){
+        localStorage.removeItem(K_MOCK); M=null; home();
+      }
+    };
+  }
+  if(mock&&!mock.done){
     document.getElementById("r-go").onclick=()=>resumeMock();
     document.getElementById("r-new").onclick=()=>{
-      if(confirm("中断中の模試を破棄して、最初から始めますか？（解答内容は失われます）")){
+      if(confirm("途中の模試をクリアして、最初から始めますか？（解答内容は失われます）")){
         localStorage.removeItem(K_MOCK); M=null; home();
       }
     };
@@ -195,22 +206,35 @@ function startMock(){
   M={idx:0,answers:{},flags:{},rec:{},remain:MOCK_SEC,done:false};
   save(K_MOCK,M); mockView();
 }
-function resumeMock(){ M=load(K_MOCK,null); if(!M){home();return} M.rec=M.rec||{}; mockView(); }
+function resumeMock(){ M=load(K_MOCK,null); if(!M){home();return} M.rec=M.rec||{}; if(M.done){showSavedResult();return} mockView(); }
+function showSavedResult(){
+  let ok=0; const byNode={};
+  QS.forEach(q=>{
+    const hit=M.answers[q.id]===q.answer; if(hit)ok++;
+    (byNode[q.node]=byNode[q.node]||[0,0])[1]++; if(hit)byNode[q.node][0]++;
+  });
+  resultView({answers:Object.assign({},M.answers),score:ok,total:QS.length,byNode,timeup:!!M.timeup,partial:false,gradedIds:new Set(QS.map(q=>q.id))});
+}
 function mockTick(){
   M.remain--;
   if(M.remain%10===0) save(K_MOCK,M);
   drawTimer();
-  if(M.remain<=0){ gradeMock(true,false); }
+  if(M.remain<=0){
+    stopTimerOnly(); M.timeup=true; save(K_MOCK,M); drawTimer();
+  }
 }
+function stopTimerOnly(){if(timerIv){clearInterval(timerIv);timerIv=null;}}
 function drawTimer(){
   const t=document.getElementById("timer");
   t.style.display="block";
-  const m=Math.max(0,M.remain), mm=String(Math.floor(m/60)).padStart(3," "), ss=String(m%60).padStart(2,"0");
-  t.textContent=`${Math.floor(m/60)}:${ss}`;
+  const m=Math.max(0,M.remain), ss=String(m%60).padStart(2,"0");
+  t.textContent=m<=0?"時間切れ":`${Math.floor(m/60)}:${ss}`;
   t.classList.toggle("warn",m<600);
 }
 function mockView(){
-  stopTimer(); timerIv=setInterval(mockTick,1000); drawTimer();
+  stopTimer();
+  if(M.remain>0) timerIv=setInterval(mockTick,1000);
+  drawTimer();
   renderMockQ();
 }
 function renderMockQ(){
@@ -271,10 +295,13 @@ function gradeMock(timeup,partial){
   if(partial){
     save(K_MOCK,M); // セッション継続 — 続きは後で再開できる
   }else{
-    const hist=load(K_HIST,[]);
-    hist.push({date:new Date().toISOString().slice(0,10),score:ok,total:target.length,byNode});
-    save(K_HIST,hist);
-    localStorage.removeItem(K_MOCK); M=null;
+    if(!M.done){
+      const hist=load(K_HIST,[]);
+      hist.push({date:new Date().toISOString().slice(0,10),score:ok,total:target.length,byNode});
+      save(K_HIST,hist);
+    }
+    M.done=true; if(timeup)M.timeup=true;
+    save(K_MOCK,M); // 採点してもデータは消えない。消すのは「クリア」を押したときだけ。
   }
   resultView(res);
 }
@@ -449,7 +476,7 @@ function weakMap(){
     document.getElementById("nd-drill").onclick=()=>startDrill(QS.filter(q=>q.node===n),NODES[n]||n);
   });
 }
-function flushSave(){ try{ if(M&&!M.done) save(K_MOCK,M); save(K_STATS,stats); }catch(e){} }
+function flushSave(){ try{ if(M) save(K_MOCK,M); save(K_STATS,stats); }catch(e){} }
 window.addEventListener("pagehide",flushSave);
 window.addEventListener("beforeunload",flushSave);
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden") flushSave(); });
