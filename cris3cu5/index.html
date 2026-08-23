@@ -66,6 +66,12 @@ button:disabled{opacity:.45;cursor:default}
 .progress i{display:block;height:100%;background:var(--ai)}
 .wronglist{margin-top:6px}
 .wrongrow{display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--rule);font-size:13px}
+.resumecard{border:1px solid var(--gold);background:#fffdf5}
+.resumecard h2{color:var(--gold)}
+.resumemode{border-color:var(--gold)}
+@media (hover:hover) and (pointer:fine){.resumemode:hover{border-color:var(--gold);box-shadow:0 2px 8px rgba(138,109,31,.18)}}
+.resumemode b{color:var(--gold)}
+.pausebadge{display:inline-block;margin-left:8px;background:#fffaed;border:1px solid var(--gold);color:var(--gold);border-radius:999px;padding:0 8px;font-size:11px;font-weight:700}
 .pgchip{display:inline-block;margin-left:8px;border:1px solid var(--ai);color:var(--ai);background:#fff;border-radius:999px;padding:0 9px;font-size:11.5px;font-weight:700;font-family:var(--sans);vertical-align:middle}
 .exp .vh .pgchip{margin-left:10px}
 .wrongrow .n{font-variant-numeric:tabular-nums;color:var(--shu);font-weight:700;min-width:2.5em}
@@ -83,7 +89,7 @@ footer{max-width:860px;margin:30px auto;padding:0 14px 30px;color:var(--sub);fon
 <footer>
   本アプリは、ITコーディネータ協会（ITCA）とは無関係の非公式学習教材です。PGL Ver.4.0本文の転載はありません。
   解説中の「PGL p.◯◯」は、お手元の『ITコーディネータ プロセスガイドライン Ver.4.0』の該当ページを示す参照です。
-  成績データはこの端末のブラウザ内（localStorage）にのみ保存され、外部送信は行いません。<span style="opacity:.55">　ITC試験対策 その2（分野別ドリル）　app v1.2.1</span>
+  成績データはこの端末のブラウザ内（localStorage）にのみ保存され、外部送信は行いません。<span style="opacity:.55">　ITC試験対策 その2（分野別ドリル）　app v1.3.0</span>
 </footer>
 
 <script>
@@ -91,14 +97,34 @@ const CHAPTERS=[{"id":"general","title":"全体共通","sub":"ITCの役割・実
 const POS=["ア","イ","ウ","エ"];
 const K_STATE="itc-drill2-state-v1";
 const K_WRONG="itc-drill2-wrong-v1";
+const K_SESS="itc-drill2-sessions-v1";
 const app=document.getElementById("app");
 let S={screen:"menu",ch:0,idx:0,sel:null,rec:{},mode:"chapter",list:null};
 let WRONG={};
+let SESS={};   /* 章ごとの中断状態: {chapterId:{idx,rec,ts}} */
 
-function save(){try{localStorage.setItem(K_STATE,JSON.stringify(S));localStorage.setItem(K_WRONG,JSON.stringify(WRONG));}catch(e){}}
+function save(){try{
+  localStorage.setItem(K_STATE,JSON.stringify(S));
+  localStorage.setItem(K_WRONG,JSON.stringify(WRONG));
+  localStorage.setItem(K_SESS,JSON.stringify(SESS));
+}catch(e){}}
 function load(){
   try{const v=localStorage.getItem(K_STATE);if(v)S=Object.assign(S,JSON.parse(v));}catch(e){}
   try{const w=localStorage.getItem(K_WRONG);if(w)WRONG=JSON.parse(w)||{};}catch(e){WRONG={}}
+  try{const s=localStorage.getItem(K_SESS);if(s)SESS=JSON.parse(s)||{};}catch(e){SESS={}}
+}
+/* 現在の進捗を章ごとに記録（中断に備えて毎回呼ぶ） */
+function stash(){
+  if(S.mode!=="chapter")return;
+  const c=CHAPTERS[S.ch]; if(!c)return;
+  const n=Object.keys(S.rec).length;
+  if(n===0&&S.idx===0){delete SESS[c.id];return;}
+  if(n>=c.questions.length){delete SESS[c.id];return;}   /* 完了したら消す */
+  SESS[c.id]={idx:S.idx,rec:S.rec,ts:Date.now()};
+}
+function fmtDate(ts){
+  const d=new Date(ts),p=n=>String(n).padStart(2,"0");
+  return `${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 function key(ci,qi){return ci+":"+qi;}
@@ -128,16 +154,46 @@ function renderMenu(){
       <div class="navrow"><button id="startreview" class="review">復習する（${nw}問）</button>
       <button id="clearwrong" class="ghost">一覧をクリア</button></div></div>`;
   }
+  /* 中断中の章があれば最上部に「続きから」カードを出す */
+  const paused=CHAPTERS.map((c,i)=>({c,i,s:SESS[c.id]})).filter(x=>x.s);
+  if(paused.length){
+    h+=`<div class="card resumecard"><h2>続きから再開</h2>
+      <div class="muted">前回とちゅうで終えた章があります。解答した内容はそのまま残っています。</div><div class="modes" style="margin-top:12px">`;
+    paused.sort((a,b)=>b.s.ts-a.s.ts).forEach(x=>{
+      const total=x.c.questions.length, done=Object.keys(x.s.rec).length;
+      const pct=Math.round(done/total*100);
+      h+=`<button class="mode resumemode" data-resume="${x.i}"><b>${esc(x.c.title)}</b>
+        <div class="muted">問${x.s.idx+1} から再開　（${done} / ${total}問 解答済み）</div>
+        <div class="progress" style="margin:8px 0 6px"><i style="width:${pct}%"></i></div>
+        <span class="cnt">最終 ${fmtDate(x.s.ts)}</span></button>`;
+    });
+    h+='</div></div>';
+  }
   h+='<div class="card"><h2>章を選択</h2><div class="modes">';
   CHAPTERS.forEach((c,i)=>{
-    const w=wrongOfCh(i);
+    const w=wrongOfCh(i), s=SESS[c.id];
+    const done=s?Object.keys(s.rec).length:0;
     h+=`<button class="mode" data-ch="${i}"><b>${esc(c.title)}</b><div class="muted">${esc(c.sub)}</div>
-      <span class="cnt">${c.questions.length}問${w?`<span class="wrongbadge">要復習 ${w}</span>`:""}</span></button>`;
+      <span class="cnt">${c.questions.length}問${w?`<span class="wrongbadge">要復習 ${w}</span>`:""}${s?`<span class="pausebadge">とちゅう ${done}/${c.questions.length}</span>`:""}</span></button>`;
   });
   h+='</div></div>';
   app.innerHTML=h;
-  app.querySelectorAll(".mode").forEach(b=>b.onclick=()=>{
-    S.ch=+b.dataset.ch;S.mode="chapter";S.list=null;S.idx=0;S.sel=null;S.rec={};S.screen="quiz";save();render();
+  app.querySelectorAll("[data-resume]").forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.resume, s=SESS[CHAPTERS[i].id];
+    S.ch=i;S.mode="chapter";S.list=null;S.idx=s.idx;S.sel=null;S.rec=Object.assign({},s.rec);S.screen="quiz";
+    save();render();
+  });
+  app.querySelectorAll("[data-ch]").forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.ch, c=CHAPTERS[i], s=SESS[c.id];
+    if(s){
+      const done=Object.keys(s.rec).length;
+      if(confirm(`「${c.title}」は問${s.idx+1}まで解答した記録が残っています（${done}/${c.questions.length}問）。\n\nOK：続きから再開\nキャンセル：最初からやり直す`)){
+        S.ch=i;S.mode="chapter";S.list=null;S.idx=s.idx;S.sel=null;S.rec=Object.assign({},s.rec);S.screen="quiz";
+        save();render();return;
+      }
+      delete SESS[c.id];
+    }
+    S.ch=i;S.mode="chapter";S.list=null;S.idx=0;S.sel=null;S.rec={};S.screen="quiz";save();render();
   });
   const sr=document.getElementById("startreview");
   if(sr)sr.onclick=()=>{
@@ -180,9 +236,11 @@ function renderQuiz(){
   }
   h+=`</div><div class="navrow">
     <button id="prev" ${S.idx===0?"disabled":""}>← 前へ</button>
+    <button id="pause" class="ghost">とちゅうでやめる</button>
     <div class="spacer"></div>
     <button id="next" class="primary" ${answered?"":"disabled"}>${S.idx===list.length-1?"結果を見る":"次へ →"}</button>
-  </div>`;
+  </div>
+  <div class="muted" style="margin-top:8px;font-size:12px">解答した内容は自動で保存されます。とちゅうでやめても、次に開いたとき同じ場所から続けられます。</div>`;
   app.innerHTML=h;
   app.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{
     if(S.sel!==null)return;
@@ -190,11 +248,17 @@ function renderQuiz(){
     const correct=(S.sel===q.answer);
     S.rec[k]=correct;
     if(correct){delete WRONG[k];}else{WRONG[k]=1;}
-    save();render();
+    stash();save();render();
   });
-  document.getElementById("prev").onclick=()=>{if(S.idx>0){S.idx--;S.sel=null;save();render();}};
+  document.getElementById("prev").onclick=()=>{if(S.idx>0){S.idx--;S.sel=null;stash();save();render();}};
+  document.getElementById("pause").onclick=()=>{
+    stash();S.screen="menu";S.sel=null;save();render();
+  };
   document.getElementById("next").onclick=()=>{
-    if(S.idx===list.length-1){S.screen="result";}else{S.idx++;S.sel=null;}
+    if(S.idx===list.length-1){
+      if(S.mode==="chapter"){const c=CHAPTERS[S.ch];if(c)delete SESS[c.id];}  /* 完走したら中断記録を消す */
+      S.screen="result";
+    }else{S.idx++;S.sel=null;stash();}
     save();render();
   };
 }
@@ -242,7 +306,16 @@ function renderResult(){
   document.getElementById("tomenu").onclick=()=>{S.screen="menu";save();render();};
 }
 
-document.getElementById("homebtn").onclick=()=>{S.screen="menu";save();render();};
+document.getElementById("homebtn").onclick=()=>{
+  if(S.screen==="quiz")stash();
+  S.screen="menu";S.sel=null;save();render();
+};
+/* タブを閉じる・アプリを離れる直前にも保存 */
+w_beforeunload();
+function w_beforeunload(){
+  window.addEventListener("beforeunload",()=>{if(S.screen==="quiz")stash();save();});
+  document.addEventListener("visibilitychange",()=>{if(document.hidden){if(S.screen==="quiz")stash();save();}});
+}
 load();
 if(S.screen==="quiz"){
   const l=curList();
