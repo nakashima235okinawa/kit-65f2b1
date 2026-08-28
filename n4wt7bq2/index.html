@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>プロセス連携ドリル｜PGL Ver.4.0</title>
+<style>
+:root{
+  --ground:#0F141C;
+  --surface:#18202B;
+  --surface-2:#1E2836;
+  --line:#2B3849;
+  --text:#E6E9EE;
+  --muted:#8D99AC;
+  --correct:#55B98A;
+  --wrong:#E4695F;
+  --amber:#E8B14A;
+  --display:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP",serif;
+  --body:"Hiragino Sans","Yu Gothic","YuGothic","Noto Sans JP",sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--ground);color:var(--text);font-family:var(--body);-webkit-font-smoothing:antialiased}
+body{min-height:100dvh;padding:0 0 env(safe-area-inset-bottom)}
+.wrap{max-width:640px;margin:0 auto;padding:0 18px 64px}
+
+/* ---------- 共通 ---------- */
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-family:var(--body);font-size:15px;font-weight:600;
+  padding:14px 22px;border-radius:2px;border:1px solid var(--line);
+  background:var(--surface-2);color:var(--text);cursor:pointer;
+  transition:border-color .15s,background .15s;
+}
+.btn:hover{border-color:var(--amber)}
+.btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.btn-primary{background:var(--amber);color:#14181F;border-color:var(--amber)}
+.btn-primary:hover{background:#F0C167}
+.btn-ghost{background:transparent}
+
+/* ---------- スタート ---------- */
+#start{padding-top:56px}
+.title{font-family:var(--display);font-size:34px;line-height:1.25;font-weight:600;letter-spacing:.02em;margin:14px 0 10px}
+.title em{font-style:normal;color:var(--amber)}
+.lede{color:var(--muted);font-size:14px;line-height:1.85;margin-bottom:34px}
+.field{margin-bottom:26px}
+.field-label{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:12px;display:block}
+.chips{display:flex;flex-direction:column;gap:8px}
+.chip{
+  display:flex;align-items:center;gap:12px;padding:13px 15px;
+  border:1px solid var(--line);background:var(--surface);border-radius:2px;cursor:pointer;
+  transition:border-color .15s,background .15s;
+}
+.chip:hover{border-color:#3D4D63}
+.chip input{position:absolute;opacity:0;width:0;height:0}
+.chip .box{
+  flex:0 0 16px;height:16px;border:1px solid #46566E;border-radius:1px;position:relative;transition:.15s;
+}
+.chip .box::after{
+  content:"";position:absolute;inset:3px;background:var(--amber);transform:scale(0);transition:transform .12s;
+}
+.chip.on{border-color:var(--amber);background:var(--surface-2)}
+.chip.on .box{border-color:var(--amber)}
+.chip.on .box::after{transform:scale(1)}
+.chip .name{font-size:14px;font-weight:600;flex:1}
+.chip .count{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.toggle-row{display:flex;gap:8px}
+.toggle-row .chip{flex:1}
+
+/* ---------- 進捗レール ---------- */
+#rail{
+  position:sticky;top:0;z-index:5;background:var(--ground);
+  padding:14px 0 12px;display:flex;gap:3px;align-items:center;
+}
+.tick{flex:1;height:3px;background:var(--line);border-radius:2px;transition:background .2s}
+.tick.ok{background:var(--correct)}
+.tick.ng{background:var(--wrong)}
+.tick.now{background:var(--amber)}
+
+/* ---------- 問題 ---------- */
+.meta{display:flex;justify-content:space-between;align-items:baseline;margin:10px 0 18px}
+.counter{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.counter b{color:var(--text);font-size:18px;font-weight:600}
+.stem{
+  font-family:var(--display);font-size:19px;line-height:1.85;letter-spacing:.02em;
+  margin-bottom:26px;
+}
+.opts{display:flex;flex-direction:column;gap:9px}
+.opt{
+  display:flex;align-items:flex-start;gap:13px;width:100%;text-align:left;
+  padding:15px 16px;border:1px solid var(--line);background:var(--surface);
+  border-radius:2px;cursor:pointer;color:var(--text);
+  font-family:var(--body);font-size:15px;line-height:1.7;
+  transition:border-color .15s,background .15s;
+}
+.opt:hover:not(:disabled){border-color:#4A5C76;background:var(--surface-2)}
+.opt:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.opt:disabled{cursor:default}
+.opt .key{
+  flex:0 0 22px;height:22px;display:grid;place-items:center;
+  font-family:var(--mono);font-size:12px;color:var(--muted);
+  border:1px solid var(--line);border-radius:1px;margin-top:1px;
+}
+.opt.correct{border-color:var(--correct);background:rgba(85,185,138,.10)}
+.opt.correct .key{border-color:var(--correct);color:var(--correct)}
+.opt.wrong{border-color:var(--wrong);background:rgba(228,105,95,.10)}
+.opt.wrong .key{border-color:var(--wrong);color:var(--wrong)}
+.opt.dim{opacity:.42}
+
+/* ---------- 経路バー（シグネチャ） ---------- */
+.reveal{margin-top:24px;animation:rise .3s ease-out both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.reveal{animation:none}}
+
+.verdict{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:700;margin-bottom:16px}
+.verdict.ok{color:var(--correct)}
+.verdict.ng{color:var(--wrong)}
+.verdict .mark{font-family:var(--mono);font-size:17px}
+
+.route{
+  border:1px solid var(--line);background:var(--surface);
+  padding:20px 16px 16px;border-radius:2px;margin-bottom:16px;
+}
+.route-label{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--amber);
+  text-align:center;margin-bottom:9px;
+}
+.route-line{display:flex;align-items:center;gap:0}
+.node{
+  flex:0 1 auto;font-size:12.5px;font-weight:700;line-height:1.45;text-align:center;
+  padding:8px 9px;border:1px solid #3A4A60;border-radius:2px;background:var(--surface-2);
+}
+.node.dest{border-color:var(--amber);color:var(--amber)}
+.arrow{flex:1 1 auto;display:flex;align-items:center;min-width:26px}
+.arrow .shaft{flex:1;height:1px;background:var(--amber)}
+.arrow .head{
+  width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;
+  border-left:7px solid var(--amber);
+}
+.route-note{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;margin-top:10px}
+.role-badge{
+  border:1px solid var(--amber);background:rgba(232,177,74,.08);color:var(--amber);
+  padding:13px 15px;border-radius:2px;margin-bottom:16px;
+  font-size:13.5px;font-weight:700;text-align:center;letter-spacing:.03em;
+}
+
+.explain{
+  font-size:14px;line-height:1.95;color:#C4CCD8;
+  border-left:2px solid var(--line);padding-left:15px;margin-bottom:24px;
+}
+.actions{display:flex;gap:10px}
+.actions .btn{flex:1}
+.hintline{font-family:var(--mono);font-size:11px;color:#5C6A7E;text-align:center;margin-top:14px}
+
+/* ---------- 結果 ---------- */
+#result{padding-top:40px}
+.score{font-family:var(--mono);font-size:56px;font-weight:600;line-height:1;letter-spacing:-.02em}
+.score span{font-size:22px;color:var(--muted)}
+.score-note{color:var(--muted);font-size:14px;margin:12px 0 34px;line-height:1.8}
+.bd{border-top:1px solid var(--line);padding:15px 0;display:flex;align-items:center;gap:14px}
+.bd .bd-name{flex:1;font-size:14px;font-weight:600}
+.bd .bd-bar{flex:0 0 90px;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.bd .bd-bar i{display:block;height:100%;background:var(--correct)}
+.bd .bd-num{flex:0 0 46px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.result-actions{display:flex;flex-direction:column;gap:9px;margin-top:34px}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- ============ スタート ============ -->
+<section id="start" class="wrap">
+  <div class="eyebrow">PGL Ver.4.0 / 自習用</div>
+  <h1 class="title">プロセス連携<em>ドリル</em></h1>
+  <p class="lede">覚えるべき固定事実は15個。矢印11本と、共通基盤の主担当3つ、そして「戦略へは直接行かない」。<br>それを順方向・逆方向・成果物名・事例判断の4つの角度から回します。</p>
+
+  <div class="field">
+    <label class="field-label">出題範囲</label>
+    <div class="chips" id="groupChips"></div>
+  </div>
+
+  <div class="field">
+    <label class="field-label">出題順</label>
+    <div class="toggle-row">
+      <label class="chip on" data-mode="shuffle"><input type="radio" name="ord" checked><span class="box"></span><span class="name">シャッフル</span></label>
+      <label class="chip" data-mode="order"><input type="radio" name="ord"><span class="box"></span><span class="name">通し番号順</span></label>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" id="startBtn" style="width:100%">はじめる</button>
+  <p class="hintline">キーボードの 1〜4 で解答、Enter で次へ</p>
+</section>
+
+<!-- ============ 出題 ============ -->
+<section id="quiz" class="wrap hide">
+  <div id="rail"></div>
+  <div class="meta">
+    <div class="counter"><b id="qNow">1</b> / <span id="qTotal">55</span></div>
+    <div class="eyebrow" id="qGroup"></div>
+  </div>
+  <p class="stem" id="stem"></p>
+  <div class="opts" id="opts"></div>
+  <div class="reveal hide" id="reveal">
+    <div class="verdict" id="verdict"></div>
+    <div id="routeSlot"></div>
+    <p class="explain" id="explain"></p>
+    <div class="actions">
+      <button class="btn btn-primary" id="nextBtn">次へ</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 結果 ============ -->
+<section id="result" class="wrap hide">
+  <div class="eyebrow">結果</div>
+  <div class="score" id="score">0<span> / 0</span></div>
+  <p class="score-note" id="scoreNote"></p>
+  <div id="breakdown"></div>
+  <div class="result-actions">
+    <button class="btn btn-primary hide" id="retryBtn">間違えた問題だけもう一度</button>
+    <button class="btn" id="againBtn">同じ範囲をもう一度</button>
+    <button class="btn btn-ghost" id="homeBtn">範囲を選び直す</button>
+  </div>
+</section>
+
+<script>
+/* ================= 短縮ノード名（経路図用） ================= */
+const N = {
+  P1:"変革・成長",
+  P2:"デジタル経営戦略",
+  P3:"デジタル経営実行計画",
+  P4:"IT開発・導入",
+  P5:"価値提供・運用",
+  P6:"提供価値検証"
+};
+
+/* ================= 問題データ =================
+   f: 固定事実番号(1-15)  g: 範囲  q: 問題文  c: 選択肢  a: 正解index
+   e: 解説  r: 経路 [from, label, to]  role: 主担当バッジ
+   ※問題文・選択肢に記号表記(P◯/C◯/CB-◯)は使わない
+============================================== */
+const DATA = [
+/* ---- 事実1：変革・成長 → デジタル経営戦略 ---- */
+{f:1,g:"A",q:"変革・成長プロセスで作成される変革構想書は、どこへの入力となるか。",
+ c:["デジタル経営戦略プロセス","デジタル経営実行計画プロセス","提供価値検証プロセス","IT開発・導入プロセス"],a:0,
+ e:"変革認識アクティビティのタスク「変革への意思決定」で作成した変革構想書を、デジタル経営戦略プロセスのインプットにする。",
+ r:[N.P1,"変革構想書",N.P2]},
+{f:1,g:"A",q:"デジタル経営戦略プロセスが、変革・成長プロセスから受け取るものの組み合わせとして適切なものはどれか。",
+ c:["変革構想書と、目標とするデジタル経営成熟度","中期経営計画書と、経営課題リスト","実行計画の評価結果と、KPI達成状況","変革構想書と、提供価値検証結果レポート"],a:0,
+ e:"変革認識アクティビティから変革構想書、デジタル経営成熟度レベルの向上アクティビティから目標とする成熟度。この2つが揃って戦略策定が始まる。",
+ r:[N.P1,"変革構想書＋目標成熟度",N.P2]},
+{f:1,g:"A",q:"「目標とするデジタル経営成熟度」を成果物とするのはどれか。",
+ c:["デジタル経営成熟度レベルの向上アクティビティ","変革認識アクティビティ","デジタル経営戦略プロセス","サイクルマネジメントアクティビティ"],a:0,
+ e:"変革・成長プロセスは変革認識と、デジタル経営成熟度レベルの向上の2つのアクティビティで構成される。現状の成熟度把握と目標レベル設定は後者が担う。"},
+{f:1,g:"A",q:"変革・成長プロセスに関する記述として、不適切なものはどれか。",
+ c:["変革構想書はデジタル経営実行計画プロセスへ直接渡され、実行計画の入力になる","変革認識アクティビティは、デジタル経営戦略プロセスの結果を評価することから始まる","デジタル経営成熟度レベルの向上アクティビティでは、現状評価と目標レベルの設定を行う","変革の可能性の発見には、オープンイノベーションやアイディアソン等も有効である"],a:0,
+ e:"変革構想書の渡し先はデジタル経営戦略プロセス。実行計画プロセスへは、戦略として具体化されてから中期経営計画の形で届く。1つ飛ばす経路はない。",
+ r:[N.P1,"変革構想書",N.P2]},
+
+/* ---- 事実2：デジタル経営戦略 → デジタル経営実行計画 ---- */
+{f:2,g:"A",q:"デジタル経営戦略プロセスが策定した中期経営計画は、どこで具体化され実行に移されるか。",
+ c:["デジタル経営実行計画プロセス","IT開発・導入プロセス","変革・成長プロセス","提供価値検証プロセス"],a:0,
+ e:"戦略は組織・機能別にブレイクダウンされ、価値実現サイクルの入口であるデジタル経営実行計画プロセスで実行計画に落とされる。",
+ r:[N.P2,"中期経営計画",N.P3]},
+{f:2,g:"A",q:"デジタル経営実行計画プロセスの主な入力はどれか。",
+ c:["デジタル経営戦略プロセスからの中期経営計画","変革・成長プロセスからの変革構想書","IT開発・導入プロセスからの調達要件定義書","価値提供・運用プロセスからのモニタリング結果"],a:0,
+ e:"デジタル経営戦略プロセスから展開された経営計画を受けて、業務プロセス設計とIT導入等の実行計画を策定する。",
+ r:[N.P2,"中期経営計画",N.P3]},
+{f:2,g:"A",q:"デジタル経営戦略が固まった。価値実現サイクルで最初に行うことはどれか。",
+ c:["業務プロセスの設計とIT導入方針の決定を含む実行計画の策定","調達要件定義書の作成とサービス開発・提供者の選定","KPI達成状況に基づく検証と改善提案","ITサービスの利活用開始判断"],a:0,
+ e:"価値実現サイクルの入口はデジタル経営実行計画プロセス。調達はIT開発・導入プロセス、検証は提供価値検証プロセスの仕事で、順序が飛んでいる。",
+ r:[N.P2,"中期経営計画",N.P3]},
+{f:2,g:"A",q:"「デジタル経営戦略企画書」を成果物とするプロセスはどれか。",
+ c:["デジタル経営戦略プロセス","変革・成長プロセス","デジタル経営実行計画プロセス","提供価値検証プロセス"],a:0,
+ e:"デジタル経営戦略プロセスの策定段階の成果物。経営ビジョン、ビジネスモデル、CSF、データ・IT利活用方針、戦略目標等を含む。"},
+
+/* ---- 事実3：デジタル経営戦略 → 変革・成長 ---- */
+{f:3,g:"A",q:"デジタル経営戦略達成度評価報告書は、どこへの入力となるか。",
+ c:["変革・成長プロセス","デジタル経営実行計画プロセス","提供価値検証プロセス","価値提供・運用プロセス"],a:0,
+ e:"デジタル経営成長サイクルは環状に回る。戦略の達成度評価が、次の変革を認識する起点になる。",
+ r:[N.P2,"達成度評価",N.P1]},
+{f:3,g:"A",q:"変革認識アクティビティの「現状分析と戦略評価」がインプットとするのはどれか。",
+ c:["デジタル経営戦略達成度評価","提供価値検証結果レポート","価値提供結果の報告書","実行計画の評価結果"],a:0,
+ e:"変革・成長プロセスは、デジタル経営戦略プロセスにおける達成度評価をインプットにする。目標値と実測値を対比し、未達の原因を特定した結果である。",
+ r:[N.P2,"達成度評価",N.P1]},
+{f:3,g:"A",q:"変革・成長プロセスが達成度評価のうち特にインプットとするのは、どの部分か。",
+ c:["外部環境の変化や、内部環境におけるデジタル経営成熟度に関係する部分","個別プロジェクトの進捗とコストの差異に関係する部分","ITサービスのサービスレベル遵守状況に関係する部分","調達したIT資源の実績情報に関係する部分"],a:0,
+ e:"変革・成長プロセスの関心は経営環境の変化と自社の成熟度。個別プロジェクトの差異はモニタリング＆コントロールアクティビティの領域で、粒度が違う。"},
+{f:3,g:"A",q:"デジタル経営成長サイクルの循環として、正しいものはどれか。",
+ c:["変革・成長プロセスからデジタル経営戦略プロセスへ進み、価値実現サイクルからの情報を経て再び変革・成長プロセスへ戻る","デジタル経営戦略プロセスから変革・成長プロセスへ進み、価値実現サイクルへ展開される","変革・成長プロセスから直接価値実現サイクルへ展開され、デジタル経営戦略プロセスへ戻る","提供価値検証プロセスから変革・成長プロセスへ戻り、デジタル経営戦略プロセスへ進む"],a:0,
+ e:"変革・成長プロセス→デジタル経営戦略プロセス→（価値実現サイクル）→変革・成長プロセス。この環を描けるかどうかが土台になる。"},
+
+/* ---- 事実4：デジタル経営実行計画 → IT開発・導入 ---- */
+{f:4,g:"B",q:"デジタル経営実行計画プロセスが策定した開発・導入計画は、どこへ渡されるか。",
+ c:["IT開発・導入プロセス","価値提供・運用プロセス","提供価値検証プロセス","デジタル経営戦略プロセス"],a:0,
+ e:"スコープ、開発の進め方、システム導入計画、体制、スケジュール、予算を含む開発・導入計画が、IT開発・導入プロセスの起点になる。",
+ r:[N.P3,"開発・導入計画",N.P4]},
+{f:4,g:"B",q:"IT開発アクティビティの「要件の確認と開発・調達の準備」で確認する要件は、どこで定義されたものか。",
+ c:["デジタル経営実行計画プロセス","デジタル経営戦略プロセス","提供価値検証プロセス","サイクルマネジメントアクティビティ"],a:0,
+ e:"業務プロセスとIT導入方針、必要な機能や業務の要件はデジタル経営実行計画プロセスで定義される。開発側はそれを確認するところから始める。",
+ r:[N.P3,"要件・開発計画",N.P4]},
+{f:4,g:"B",q:"IT開発・導入プロセスに関する記述として、不適切なものはどれか。",
+ c:["デジタル経営戦略プロセスから直接、開発要件を受け取る","デジタル経営実行計画プロセスの開発・導入計画に基づいて実行する","IT開発アクティビティとIT導入アクティビティで構成される","次工程は価値提供・運用プロセスである"],a:0,
+ e:"戦略プロセスと開発プロセスは直接つながっていない。必ずデジタル経営実行計画プロセスを挟む。",
+ r:[N.P3,"開発・導入計画",N.P4]},
+
+/* ---- 事実5：デジタル経営実行計画 → 提供価値検証 ---- */
+{f:5,g:"B",q:"デジタル経営実行計画プロセスの「評価指標の設計」で設定したKGIとKPIは、どのプロセスで検証されるか。",
+ c:["提供価値検証プロセス","価値提供・運用プロセス","IT開発・導入プロセス","デジタル経営戦略プロセス"],a:0,
+ e:"実行計画プロセスは「提供価値検証プロセスで検証する指標と目標値」を設定する。測る物差しを作る側と、それで測る側が分かれている。",
+ r:[N.P3,"評価指標と目標値",N.P6]},
+{f:5,g:"B",q:"提供価値検証プロセスが「提供価値の検証」で用いる目標値は、どこで設定されたものか。",
+ c:["デジタル経営実行計画プロセス","提供価値検証プロセス自身","価値提供・運用プロセス","モニタリング＆コントロールアクティビティ"],a:0,
+ e:"検証プロセスは自分で基準を作らない。デジタル経営実行計画プロセスが設定した評価指標と目標値に照らして、計画通り価値提供できたかを判断する。",
+ r:[N.P3,"評価指標と目標値",N.P6]},
+{f:5,g:"B",q:"評価指標に関する記述として、不適切なものはどれか。",
+ c:["KPIの目標値は、稼働後に提供価値検証プロセスが実績を見ながら独自に設定する","KGIの達成に必要な行動を促す指標としてKPIを設定する","目標値が高い場合は、段階的な目標とその達成時期を設定する","KPIの目標値と現状の数値とのギャップを把握して設定する"],a:0,
+ e:"目標値はデジタル経営実行計画プロセスで事前に設定する。検証側が後から基準を決めては、評価が成り立たない。"},
+
+/* ---- 事実6：デジタル経営実行計画 → デジタル経営戦略 ---- */
+{f:6,g:"B",q:"デジタル経営実行計画プロセスの「実行計画評価」の結果は、どこへフィードバックされるか。",
+ c:["デジタル経営戦略プロセス","変革・成長プロセス","提供価値検証プロセス","IT開発・導入プロセス"],a:0,
+ e:"実行計画プロセスのタスク「実行計画評価」の成果物は、実行計画の評価結果とデジタル経営戦略へのフィードバック。ここが2つのサイクルの継ぎ目になる。",
+ r:[N.P3,"実行計画の評価結果",N.P2]},
+{f:6,g:"B",q:"価値実現サイクルからデジタル経営成長サイクルへ情報を返す窓口となるプロセスはどれか。",
+ c:["デジタル経営実行計画プロセス","提供価値検証プロセス","価値提供・運用プロセス","IT開発・導入プロセス"],a:0,
+ e:"検証は提供価値検証プロセスが行うが、サイクルをまたいで戦略へ返す役目はデジタル経営実行計画プロセスが担う。関所は1つだけ。",
+ r:[N.P3,"実行計画の評価結果",N.P2]},
+{f:6,g:"B",q:"提供価値検証プロセスから「戦略の前提が崩れている」と報告が上がった。デジタル経営戦略プロセスへ届くまでの経路として正しいものはどれか。",
+ c:["デジタル経営実行計画プロセスが評価したうえで、デジタル経営戦略プロセスへ伝達される","提供価値検証プロセスがデジタル経営戦略プロセスへ直接伝達する","価値提供・運用プロセスを経由してデジタル経営戦略プロセスへ伝達される","変革・成長プロセスを経由してデジタル経営戦略プロセスへ伝達される"],a:0,
+ e:"提供価値検証プロセスのフィードバック先はデジタル経営実行計画プロセスまで。そこで評価され、戦略へ渡る。最頻出の誤答パターンなので確実に。",
+ r:[N.P6,"→実行計画→",N.P2]},
+
+/* ---- 事実7：IT開発・導入 → 価値提供・運用 ---- */
+{f:7,g:"C",q:"IT導入アクティビティの次工程はどれか。",
+ c:["価値提供・運用プロセス","提供価値検証プロセス","デジタル経営実行計画プロセス","IT開発アクティビティ"],a:0,
+ e:"導入・利活用開始の判断が下りたら、運用リーダーが主担当となる価値提供・運用プロセスへ移る。",
+ r:[N.P4,"稼働システム",N.P5]},
+{f:7,g:"C",q:"ITサービスの利活用開始判断の後、主担当となるのは誰か。",
+ c:["運用リーダー","デジタル経営支援者","経営者","サービス開発・提供者"],a:0,
+ e:"次工程である価値提供・運用プロセスの主担当は運用リーダー。導入で終わりではなく、担い手が引き継がれる点が問われる。",
+ role:"次工程の主担当：運用リーダー"},
+{f:7,g:"C",q:"IT導入アクティビティの2つのタスクの順序として正しいものはどれか。",
+ c:["IT資源配備・展開準備 → ITシステム導入・利活用開始","ITシステム導入・利活用開始 → IT資源配備・展開準備","テスト → IT資源配備・展開準備","調達実施 → ITシステム導入・利活用開始"],a:0,
+ e:"配備・展開準備で本番環境への移行を整え、その後に導入して利活用開始を判断する。テストと調達はIT開発アクティビティ側のタスク。"},
+
+/* ---- 事実8：IT開発・導入 → 提供価値検証 ---- */
+{f:8,g:"C",q:"IT開発・導入プロセスで得られた「更なる価値提供のための気づき情報」は、どこへ渡されるか。",
+ c:["提供価値検証プロセス","デジタル経営実行計画プロセス","価値提供・運用プロセス","デジタル経営戦略プロセス"],a:0,
+ e:"開発中に不足機能や新たな価値に気づいたら、提供価値検証プロセスへ共有する。前工程へ差し戻すのではなく、横へ渡す。",
+ r:[N.P4,"気づき情報",N.P6]},
+{f:8,g:"C",q:"開発を進める中で、顧客満足につながる新たな価値に気づいた。とるべき対応はどれか。",
+ c:["提供価値検証プロセスへ気づきを共有する","デジタル経営実行計画プロセスへ差し戻し、計画を見直す","開発チームの判断で要件に追加し、実装する","次期システムの課題として記録に留める"],a:0,
+ e:"気づきは提供価値検証プロセスへ。追加・変更は必要性、優先度、開発計画全体への影響を吟味したうえで判断する。",
+ r:[N.P4,"気づき情報",N.P6]},
+{f:8,g:"C",q:"開発中の気づきの扱いとして、不適切なものはどれか。",
+ c:["顧客価値につながる気づきは、開発チームの判断で速やかに要件へ反映する","気づきは提供価値検証プロセスへ共有する","機能の追加・変更は、開発計画全体への影響を吟味してから行う","すでに決定した要件や仕様を、この段階で大きく変更することは適切ではない"],a:0,
+ e:"良い気づきでも、その場で要件を動かすのは不適切。優先度と影響を判断する仕組みに乗せる。"},
+
+/* ---- 事実9：価値提供・運用 → 提供価値検証 ---- */
+{f:9,g:"C",q:"価値提供結果の報告書は、どこへ渡されるか。",
+ c:["提供価値検証プロセス","デジタル経営実行計画プロセス","IT開発・導入プロセス","デジタル経営戦略プロセス"],a:0,
+ e:"評価指標と目標値に基づいて収集した価値提供状況の情報と報告書が、提供価値検証プロセスの主な入力になる。",
+ r:[N.P5,"価値提供結果の報告書",N.P6]},
+{f:9,g:"C",q:"「価値提供結果の可視化」は、どのプロセスのタスクか。",
+ c:["価値提供・運用プロセス","提供価値検証プロセス","デジタル経営実行計画プロセス","IT開発・導入プロセス"],a:0,
+ e:"可視化までが価値提供・運用プロセス。可視化された結果を受けて検証するのが提供価値検証プロセス。この線引きが選択肢の作り分けに使われる。"},
+{f:9,g:"C",q:"「ITサービス利活用の検証」は、どのプロセスのタスクか。",
+ c:["提供価値検証プロセス","価値提供・運用プロセス","IT開発・導入プロセス","モニタリング＆コントロールアクティビティ"],a:0,
+ e:"利用者数や利用頻度、サービスレベル遵守状況等の検証は提供価値検証プロセスの役割。運用プロセスの記述と入れ替えた誤答が作られやすい。"},
+{f:9,g:"C",q:"提供価値検証プロセスの入力として、適切な組み合わせはどれか。",
+ c:["IT開発・導入プロセスからの気づき情報と、価値提供・運用プロセスからの価値提供結果の報告書","デジタル経営戦略プロセスからの中期経営計画と、変革・成長プロセスからの変革構想書","デジタル経営実行計画プロセスからの開発・導入計画と、調達要件定義書","価値提供・運用プロセスからのRFPと、サービス開発・提供者選定結果報告書"],a:0,
+ e:"検証プロセスには、開発側からの気づきと運用側からの実績という2本の線が入る。加えて実行計画プロセスから評価指標と目標値を受け取る。"},
+
+/* ---- 事実10：提供価値検証 → IT開発・導入／価値提供・運用 ---- */
+{f:10,g:"D",q:"ITシステムの開発・導入に関する改善点は、どこへフィードバックされるか。",
+ c:["IT開発・導入プロセス","価値提供・運用プロセス","デジタル経営実行計画プロセス","デジタル経営戦略プロセス"],a:0,
+ e:"作り方の問題は開発側へ返す。使い方の問題は運用側へ返す。この2分岐が、検証プロセスのフィードバックの基本形。",
+ r:[N.P6,"改善提案書",N.P4]},
+{f:10,g:"D",q:"IT利活用による価値提供やITサービス運用に関連する改善点は、どこへフィードバックされるか。",
+ c:["価値提供・運用プロセス","IT開発・導入プロセス","デジタル経営実行計画プロセス","組織学習アクティビティ"],a:0,
+ e:"運用や利活用のしかたに起因する改善点は価値提供・運用プロセスへ。共通基盤のアクティビティはフィードバック先ではない。",
+ r:[N.P6,"改善提案書",N.P5]},
+{f:10,g:"D",q:"「プロセス・アクティビティ・タスクの改善提案書」を成果物とするタスクはどれか。",
+ c:["価値実現サイクル各プロセスへのフィードバック","デジタル経営実行計画プロセスへのフィードバック","提供価値の検証","業務工程や手順の検証"],a:0,
+ e:"提供価値検証プロセスのタスク4の成果物。タスク5の成果物はデジタル経営実行計画プロセスへのフィードバックレポートで、別物。"},
+{f:10,g:"D",q:"稼働後、システムの操作が現場に定着せず、ノウハウが特定個人に偏っている。改善点のフィードバック先はどこか。",
+ c:["価値提供・運用プロセス","IT開発・導入プロセス","デジタル経営実行計画プロセス","組織学習アクティビティ"],a:0,
+ e:"教育や運用の改善点は価値提供・運用プロセスへ返す。組織学習は返し先ではなく、返された側がプロセスに組み込んで使う手段。",
+ r:[N.P6,"教育の改善点",N.P5]},
+{f:10,g:"D",q:"稼働後、必要な機能が不足していて業務が回らないことが分かった。改善点のフィードバック先はどこか。",
+ c:["IT開発・導入プロセス","価値提供・運用プロセス","デジタル経営戦略プロセス","セキュリティアクティビティ"],a:0,
+ e:"機能や品質、システムの作りに起因する問題は開発側へ。業務設計そのものを変える必要がある場合だけ、実行計画プロセスへ上がる。",
+ r:[N.P6,"改善提案書",N.P4]},
+
+/* ---- 事実11：提供価値検証 → デジタル経営実行計画 ---- */
+{f:11,g:"D",q:"提供価値検証プロセスがデジタル経営実行計画プロセスへフィードバックすべき内容はどれか。",
+ c:["各プロセスやタスクのレベルでは改善が困難な、全社的な業務改革の必要性や新たな価値への気付き","開発したシステムの不具合と、その修正手順","ITサービスのサービスレベル遵守状況の月次報告","調達したIT資源の実績情報と契約内容の見直し"],a:0,
+ e:"サイクル内で直せるものはサイクル内で返す。計画自体を見直さないと直らないものだけが実行計画プロセスへ上がる。",
+ r:[N.P6,"フィードバックレポート",N.P3]},
+{f:11,g:"D",q:"稼働後の検証で、業務のやり方そのものを変えないと価値が出ないと判明した。フィードバック先はどこか。",
+ c:["デジタル経営実行計画プロセス","IT開発・導入プロセス","価値提供・運用プロセス","変革・成長プロセス"],a:0,
+ e:"業務設計や計画のレベルの問題なので実行計画プロセスへ。次の周回で計画が見直され、より高付加価値なバリューチェーンにつながる。",
+ r:[N.P6,"フィードバックレポート",N.P3]},
+{f:11,g:"D",q:"デジタル経営実行計画プロセスへのフィードバックの目的として、適切なものはどれか。",
+ c:["次の価値実現サイクルが回るときに、計画の見直しが行われるようにするため","進行中のプロジェクトを直ちに中断し、計画を作り直させるため","デジタル経営戦略プロセスの判断を経ずに、戦略を変更するため","開発リーダーの責任範囲を明確にするため"],a:0,
+ e:"価値実現サイクルは反復して回る。その場で差し戻すのではなく、次の周回に反映させるという考え方が前提にある。"},
+
+/* ---- 事実12：戦略へは直接行かない ---- */
+{f:12,g:"D",q:"提供価値検証プロセスのフィードバック先として、正しいものはどれか。",
+ c:["価値実現サイクル内の各プロセスと、デジタル経営実行計画プロセス","デジタル経営戦略プロセスと、変革・成長プロセス","価値実現サイクル内の各プロセスと、デジタル経営戦略プロセス","デジタル経営共通基盤の各アクティビティ"],a:0,
+ e:"フィードバック先は2か所だけ。ここを押さえれば、経路を問う問題の大半は消去法で解ける。",
+ r:[N.P6,"2か所のみ",N.P3]},
+{f:12,g:"D",q:"提供価値検証プロセスに関する記述として、不適切なものはどれか。",
+ c:["デジタル経営戦略プロセスへ直接フィードバックし、戦略の変更を求める","ITサービスや提供価値の状況を検証し改善する","IT開発・導入プロセスと価値提供・運用プロセスへ改善点をフィードバックする","デジタル経営実行計画プロセスへ、計画の見直しにつながる情報をフィードバックする"],a:0,
+ e:"戦略プロセスへはデジタル経営実行計画プロセスを介して伝達され、そこで判断される。直接の経路はない。",
+ r:[N.P6,"→実行計画→",N.P2]},
+{f:12,g:"D",q:"提供価値検証プロセスから変革・成長プロセスへ、検証結果を直接フィードバックすることについて、適切な説明はどれか。",
+ c:["そのような経路はなく、デジタル経営実行計画プロセスを経由する","経営に関わる重要な気付きに限り、直接フィードバックできる","変革構想の見直しが必要な場合のみ、直接フィードバックする","サイクルマネジメントアクティビティを介して直接フィードバックする"],a:0,
+ e:"価値実現サイクルからデジタル経営成長サイクルへの出口は、デジタル経営実行計画プロセスの1つだけ。飛び越える経路は存在しない。"},
+{f:12,g:"D",q:"価値実現サイクルの各プロセス間のやりとりに関する原則として、適切なものはどれか。",
+ c:["問題が起きても前工程へ差し戻すのではなく、次の周回で見直すことを基本とする","問題が起きた場合は、原因となったプロセスまで速やかに差し戻す","フィードバックは常にデジタル経営戦略プロセスまで上げて判断を仰ぐ","フィードバックはデジタル経営共通基盤へ集約し、そこから各プロセスへ配分する"],a:0,
+ e:"価値実現サイクルは反復して回るもの。「実行計画まで戻って再検討する」という選択肢は、よほどの根拠がない限り誤りになる。"},
+
+/* ---- 事実13：サイクルマネジメント＝デジタル経営推進者 ---- */
+{f:13,g:"E",q:"サイクルマネジメントアクティビティの主担当は誰か。",
+ c:["デジタル経営推進者","経営者","開発リーダー","運用リーダー"],a:0,
+ e:"デジタル経営推進者は価値実現サイクルに責任を持つため、サイクルマネジメントの主担当となる。対になる組織学習は経営者。",
+ role:"サイクルマネジメント：デジタル経営推進者"},
+{f:13,g:"E",q:"IT開発・導入プロセスの主要メンバーである情報センター長が、部門の存在意義を理由に検討の大幅な見直しを求めてきた。サイクルマネジメントの責任者がとるべき対応はどれか。",
+ c:["組織の利害を越えて協力するよう説得する","役員会でデジタル経営実行計画を再検討する","当該メンバーをプロセスから外す","主要メンバーの意見を尊重し、方針を変更する"],a:0,
+ e:"サイクルマネジメントの責任者はプロセスの実行状況を把握し、問題発生時に適切な支援を行う。一人の反対で実行計画まで戻ることはなく、反対者を外しても根本解決にならない。",
+ role:"サイクルマネジメント：デジタル経営推進者"},
+{f:13,g:"E",q:"サイクルマネジメントアクティビティのタスクに含まれないものはどれか。",
+ c:["パフォーマンス指標の確認とモニタリング","プロセス定義","プロセス文書化","プロセス改善"],a:0,
+ e:"サイクルマネジメントは定義、文書化、実行、改善の4タスク。パフォーマンス指標はモニタリング＆コントロールアクティビティの領域。"},
+
+/* ---- 事実14：組織学習＝経営者 ---- */
+{f:14,g:"E",q:"組織学習アクティビティの主担当は誰か。",
+ c:["経営者","デジタル経営推進者","開発リーダー","運用リーダー"],a:0,
+ e:"組織学習は全社にわたる取り組みであるため、経営者が責任を持つ。デジタル経営共通基盤の中で、経営者が主担当となるのはここだけ。",
+ role:"組織学習：経営者"},
+{f:14,g:"E",q:"経営者が主担当となるものの組み合わせとして、適切なものはどれか。",
+ c:["変革・成長プロセス、デジタル経営戦略プロセス、組織学習アクティビティ","変革・成長プロセス、デジタル経営実行計画プロセス、サイクルマネジメントアクティビティ","デジタル経営戦略プロセス、提供価値検証プロセス、セキュリティアクティビティ","デジタル経営実行計画プロセス、価値提供・運用プロセス、組織学習アクティビティ"],a:0,
+ e:"経営者はデジタル経営成長サイクルの2プロセスと、全社的な組織学習。価値実現サイクルはデジタル経営推進者が主役になる。",
+ role:"経営者：変革・成長／デジタル経営戦略／組織学習"},
+{f:14,g:"E",q:"新システムを現場が使いこなせず、必要なスキルが不足している。組み込むべきアクティビティはどれか。",
+ c:["組織学習","サイクルマネジメント","モニタリング＆コントロール","コミュニケーション"],a:0,
+ e:"スキル不足、ノウハウの属人化、リスキリングは組織学習の領域。フィードバック先はプロセス、実施手段は共通基盤という関係になる。",
+ role:"組織学習：経営者"},
+
+/* ---- 事実15：コミュニケーション／モニタリング＆コントロール／セキュリティ ---- */
+{f:15,g:"E",q:"コミュニケーション、モニタリング＆コントロール、セキュリティの各アクティビティに共通する主担当は誰か。",
+ c:["開発リーダーと運用リーダー","経営者","デジタル経営推進者","デジタル経営支援者"],a:0,
+ e:"この3つは実働のアクティビティなので、主担当は開発リーダーと運用リーダー。デジタル経営推進者は支援側に回る。",
+ role:"実働3種：開発リーダー・運用リーダー"},
+{f:15,g:"E",q:"部門合同の課題検討会議で意見が出ず、各部門の役割も曖昧で議論が噛み合わない。組み込むべきアクティビティはどれか。",
+ c:["コミュニケーション","サイクルマネジメント","組織学習","モニタリング＆コントロール"],a:0,
+ e:"役割と責任の割り当て、コミュニケーションチャネルの確立はコミュニケーションアクティビティのタスク。各部門が主体的に課題を持ち寄ることを役割として明確にする。",
+ role:"コミュニケーション：開発リーダー・運用リーダー"},
+{f:15,g:"E",q:"プロジェクトの進捗とコストが計画から乖離してきた。とるべき対応はどれか。",
+ c:["モニタリング＆コントロールで差異を分析し、優先順位をつけて是正措置を講じる","デジタル経営実行計画プロセスへ差し戻し、計画を作り直す","提供価値検証プロセスへ報告し、検証を待つ","デジタル経営戦略プロセスへ報告し、戦略の見直しを求める"],a:0,
+ e:"計画との差異はモニタリング＆コントロールの守備範囲。乖離が出たからといってプロセスを戻す選択肢は誤りになりやすい。",
+ role:"モニタリング＆コントロール：開発リーダー・運用リーダー"},
+{f:15,g:"E",q:"運用開始後に脆弱性が公表され、インシデントが発生した。組み込むべきアクティビティはどれか。",
+ c:["セキュリティ","サイクルマネジメント","組織学習","コミュニケーション"],a:0,
+ e:"脅威・脆弱性の収集・把握、影響分析・評価はセキュリティアクティビティ。ITサービス運用アクティビティの「維持管理」と連動して対応する。",
+ role:"セキュリティ：開発リーダー・運用リーダー"},
+{f:15,g:"E",q:"デジタル経営共通基盤の位置づけとして、適切なものはどれか。",
+ c:["各プロセスに組み込んで使う、サイクル横断の共通アクティビティ群である","各プロセスからの改善点を集約する、フィードバックの受け皿である","価値実現サイクルの後に実行される、独立したプロセスである","デジタル経営成長サイクルにのみ適用されるアクティビティ群である"],a:0,
+ e:"各プロセスでは、フィードバック内容に基づき、必要に応じて共通基盤から適切なアクティビティを当該プロセスに組み込んで改善策を実施する。返し先ではない。"},
+{f:15,g:"E",q:"提供価値検証プロセスからのフィードバックに関する記述として、不適切なものはどれか。",
+ c:["改善点はサイクルマネジメントアクティビティへフィードバックし、そこから各プロセスへ配分する","改善点はIT開発・導入プロセスや価値提供・運用プロセスへフィードバックする","各プロセスは、必要に応じて共通基盤のアクティビティを組み込んで改善策を実施する","計画自体の見直しが必要な課題はデジタル経営実行計画プロセスへフィードバックする"],a:0,
+ e:"共通基盤はフィードバック先ではなく、受け取った側が使う道具。「◯◯へフィードバックする」の目的語に共通基盤が来たら誤りを疑う。"},
+{f:15,g:"E",q:"デジタル経営共通基盤を構成するアクティビティの組み合わせとして、適切なものはどれか。",
+ c:["サイクルマネジメント、コミュニケーション、モニタリング＆コントロール、セキュリティ、組織学習","サイクルマネジメント、コミュニケーション、リスク管理、セキュリティ、人材育成","プロジェクトマネジメント、コミュニケーション、モニタリング＆コントロール、品質管理、組織学習","変革認識、コミュニケーション、モニタリング＆コントロール、セキュリティ、組織学習"],a:0,
+ e:"5つの名称を正確に。プロジェクトマネジメントやリスク管理といった、それらしい別名に差し替えた誤答が作られる。"}
+];
+
+const GROUPS = [
+  {id:"A",name:"成長サイクルの往復",sub:"変革・成長 ⇄ デジタル経営戦略 → 実行計画"},
+  {id:"B",name:"実行計画からの展開",sub:"開発へ・検証へ・戦略へ戻す"},
+  {id:"C",name:"開発から検証へ",sub:"稼働システム・気づき情報・提供結果"},
+  {id:"D",name:"検証からの戻し",sub:"2分岐と、戦略へ直接行かない原則"},
+  {id:"E",name:"共通基盤と主担当",sub:"5アクティビティと責任者"}
+];
+
+/* ================= 状態 ================= */
+let deck=[], idx=0, answered=false, results=[], picked=[];
+let selGroups = new Set(GROUPS.map(g=>g.id));
+let ordMode = "shuffle";
+
+const $ = s=>document.querySelector(s);
+const shuffle = a=>{const b=a.slice();for(let i=b.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[b[i],b[j]]=[b[j],b[i]]}return b};
+
+/* ================= スタート画面 ================= */
+function renderGroups(){
+  $("#groupChips").innerHTML = GROUPS.map(g=>{
+    const n = DATA.filter(d=>d.g===g.id).length;
+    return `<label class="chip on" data-g="${g.id}">
+      <span class="box"></span>
+      <span class="name">${g.name}<br><span style="font-weight:400;font-size:12px;color:var(--muted)">${g.sub}</span></span>
+      <span class="count">${n}問</span>
+    </label>`;
+  }).join("");
+  $("#groupChips").querySelectorAll(".chip").forEach(el=>{
+    el.addEventListener("click",e=>{
+      e.preventDefault();
+      const g = el.dataset.g;
+      if(selGroups.has(g)){ if(selGroups.size===1) return; selGroups.delete(g); el.classList.remove("on"); }
+      else { selGroups.add(g); el.classList.add("on"); }
+    });
+  });
+}
+document.querySelectorAll(".toggle-row .chip").forEach(el=>{
+  el.addEventListener("click",e=>{
+    e.preventDefault();
+    document.querySelectorAll(".toggle-row .chip").forEach(x=>x.classList.remove("on"));
+    el.classList.add("on"); ordMode = el.dataset.mode;
+  });
+});
+
+function begin(list){
+  deck = list; idx=0; results=[]; picked=[];
+  $("#start").classList.add("hide"); $("#result").classList.add("hide"); $("#quiz").classList.remove("hide");
+  $("#qTotal").textContent = deck.length;
+  buildRail(); render();
+  window.scrollTo(0,0);
+}
+$("#startBtn").addEventListener("click",()=>{
+  let list = DATA.filter(d=>selGroups.has(d.g));
+  list = ordMode==="shuffle" ? shuffle(list) : list;
+  begin(list);
+});
+
+/* ================= 進捗レール ================= */
+function buildRail(){
+  $("#rail").innerHTML = deck.map(()=>`<i class="tick"></i>`).join("");
+}
+function paintRail(){
+  const ticks = $("#rail").children;
+  for(let i=0;i<ticks.length;i++){
+    ticks[i].className = "tick" + (results[i]===true?" ok":results[i]===false?" ng":(i===idx?" now":""));
+  }
+}
+
+/* ================= 出題 ================= */
+function render(){
+  const q = deck[idx];
+  answered=false;
+  $("#qNow").textContent = idx+1;
+  $("#qGroup").textContent = GROUPS.find(g=>g.id===q.g).name;
+  $("#stem").textContent = q.q;
+  $("#reveal").classList.add("hide");
+  $("#routeSlot").innerHTML = "";
+
+  const order = shuffle(q.c.map((t,i)=>({t,i})));
+  picked[idx] = order;
+  $("#opts").innerHTML = order.map((o,n)=>
+    `<button class="opt" data-i="${o.i}" data-n="${n}"><span class="key">${n+1}</span><span>${o.t}</span></button>`
+  ).join("");
+  $("#opts").querySelectorAll(".opt").forEach(b=>b.addEventListener("click",()=>choose(+b.dataset.i)));
+  paintRail();
+}
+
+function choose(chosen){
+  if(answered) return;
+  answered = true;
+  const q = deck[idx];
+  const ok = chosen === q.a;
+  results[idx] = ok;
+
+  $("#opts").querySelectorAll(".opt").forEach(b=>{
+    const i = +b.dataset.i;
+    b.disabled = true;
+    if(i===q.a) b.classList.add("correct");
+    else if(i===chosen) b.classList.add("wrong");
+    else b.classList.add("dim");
+  });
+
+  $("#verdict").className = "verdict " + (ok?"ok":"ng");
+  $("#verdict").innerHTML = `<span class="mark">${ok?"○":"×"}</span><span>${ok?"正解":"不正解"}</span>`;
+
+  let badge = "";
+  if(q.r){
+    badge = `<div class="route">
+      <div class="route-label">経路</div>
+      <div class="route-line">
+        <span class="node">${q.r[0]}</span>
+        <span class="arrow"><span class="shaft"></span><span class="head"></span></span>
+        <span class="node dest">${q.r[2]}</span>
+      </div>
+      <div class="route-note">${q.r[1]}</div>
+    </div>`;
+  } else if(q.role){
+    badge = `<div class="role-badge">${q.role}</div>`;
+  }
+  $("#routeSlot").innerHTML = badge;
+  $("#explain").textContent = q.e;
+  $("#reveal").classList.remove("hide");
+  paintRail();
+  $("#nextBtn").textContent = idx===deck.length-1 ? "結果を見る" : "次へ";
+  $("#nextBtn").focus({preventScroll:true});
+  $("#reveal").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+$("#nextBtn").addEventListener("click",()=>{
+  if(idx===deck.length-1){ finish(); return; }
+  idx++; render(); window.scrollTo({top:0,behavior:"smooth"});
+});
+
+document.addEventListener("keydown",e=>{
+  if($("#quiz").classList.contains("hide")) return;
+  if(!answered && ["1","2","3","4"].includes(e.key)){
+    const b = $("#opts").querySelector(`.opt[data-n="${+e.key-1}"]`);
+    if(b) b.click();
+  } else if(answered && (e.key==="Enter"||e.key===" ")){
+    e.preventDefault(); $("#nextBtn").click();
+  }
+});
+
+/* ================= 結果 ================= */
+function finish(){
+  $("#quiz").classList.add("hide"); $("#result").classList.remove("hide");
+  window.scrollTo(0,0);
+  const n = results.filter(Boolean).length, t = deck.length;
+  const pct = Math.round(n/t*100);
+  $("#score").innerHTML = `${n}<span> / ${t}　${pct}%</span>`;
+
+  const note = pct===100 ? "全問正解。15個の固定事実は定着しています。角度を変えても崩れないか、シャッフルで数日空けて再確認を。"
+    : pct>=80 ? "取りこぼしは特定の事実に偏っているはずです。下の内訳で弱い範囲だけを回してください。"
+    : pct>=50 ? "まだ経路が像として結ばれていない状態です。白紙に矢印を描く練習を挟むと、伸び方が変わります。"
+    : "まず範囲を1つに絞ってください。全体を薄く回すより、1範囲を確実にするほうが早く積み上がります。";
+  $("#scoreNote").textContent = note;
+
+  const rows = GROUPS.map(g=>{
+    const ids = deck.map((d,i)=>d.g===g.id?i:-1).filter(i=>i>=0);
+    if(!ids.length) return "";
+    const c = ids.filter(i=>results[i]).length;
+    return `<div class="bd">
+      <span class="bd-name">${g.name}</span>
+      <span class="bd-bar"><i style="width:${Math.round(c/ids.length*100)}%"></i></span>
+      <span class="bd-num">${c}/${ids.length}</span>
+    </div>`;
+  }).join("");
+  $("#breakdown").innerHTML = rows;
+
+  const missed = deck.filter((_,i)=>!results[i]);
+  $("#retryBtn").classList.toggle("hide", missed.length===0);
+  $("#retryBtn").onclick = ()=>begin(shuffle(missed));
+}
+$("#againBtn").addEventListener("click",()=>{
+  let list = DATA.filter(d=>selGroups.has(d.g));
+  begin(ordMode==="shuffle"?shuffle(list):list);
+});
+$("#homeBtn").addEventListener("click",()=>{
+  $("#result").classList.add("hide"); $("#start").classList.remove("hide"); window.scrollTo(0,0);
+});
+
+renderGroups();
+</script>
+</body>
+</html>
