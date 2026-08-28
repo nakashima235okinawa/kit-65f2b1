@@ -68,6 +68,33 @@ body{min-height:100dvh;padding:0 0 env(safe-area-inset-bottom)}
 .toggle-row{display:flex;gap:8px}
 .toggle-row .chip{flex:1}
 
+/* ---------- 続きから／記録 ---------- */
+.resume{
+  border:1px solid var(--amber);background:rgba(232,177,74,.07);
+  border-radius:2px;padding:16px;margin-bottom:26px;
+}
+.resume .rlabel{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--amber);margin-bottom:8px}
+.resume .rtext{font-size:14px;color:#C4CCD8;line-height:1.7;margin-bottom:14px}
+.resume .rtext b{color:var(--text);font-family:var(--mono);font-size:16px}
+
+.rec{border:1px solid var(--line);background:var(--surface);border-radius:2px;padding:16px;margin-bottom:26px}
+.rec-top{display:flex;gap:18px;margin-bottom:16px}
+.rec-cell{flex:1}
+.rec-cell .n{font-family:var(--mono);font-size:24px;font-weight:600;line-height:1}
+.rec-cell .n.warn{color:var(--amber)}
+.rec-cell .l{font-size:11px;color:var(--muted);margin-top:6px}
+.rec-row{display:flex;align-items:center;gap:11px;padding:7px 0;font-size:12.5px}
+.rec-row .rn{flex:1;color:#C4CCD8}
+.rec-row .rb{flex:0 0 62px;height:3px;background:var(--line);border-radius:2px;overflow:hidden}
+.rec-row .rb i{display:block;height:100%;background:var(--correct)}
+.rec-row .rv{flex:0 0 40px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.linkbtn{
+  background:none;border:none;color:var(--muted);font-family:var(--body);font-size:12px;
+  text-decoration:underline;cursor:pointer;padding:6px 0;
+}
+.linkbtn:hover{color:var(--wrong)}
+.chip.off{opacity:.4;pointer-events:none}
+
 /* ---------- 進捗レール ---------- */
 #rail{
   position:sticky;top:0;z-index:5;background:var(--ground);
@@ -175,21 +202,35 @@ body{min-height:100dvh;padding:0 0 env(safe-area-inset-bottom)}
   <h1 class="title">プロセス連携<em>ドリル</em></h1>
   <p class="lede">覚えるべき固定事実は15個。矢印11本と、共通基盤の主担当3つ、そして「戦略へは直接行かない」。<br>それを順方向・逆方向・成果物名・事例判断の4つの角度から回します。</p>
 
+  <div id="resumeSlot"></div>
+  <div id="recSlot"></div>
+
   <div class="field">
     <label class="field-label">出題範囲</label>
     <div class="chips" id="groupChips"></div>
   </div>
 
   <div class="field">
-    <label class="field-label">出題順</label>
-    <div class="toggle-row">
-      <label class="chip on" data-mode="shuffle"><input type="radio" name="ord" checked><span class="box"></span><span class="name">シャッフル</span></label>
-      <label class="chip" data-mode="order"><input type="radio" name="ord"><span class="box"></span><span class="name">通し番号順</span></label>
+    <label class="field-label">出題する問題</label>
+    <div class="toggle-row" id="pickRow">
+      <label class="chip on" data-pick="all"><span class="box"></span><span class="name">すべて</span></label>
+      <label class="chip" data-pick="weak"><span class="box"></span><span class="name">苦手だけ<br><span style="font-weight:400;font-size:11px;color:var(--muted)" id="weakN">0問</span></span></label>
+      <label class="chip" data-pick="new"><span class="box"></span><span class="name">未着手だけ<br><span style="font-weight:400;font-size:11px;color:var(--muted)" id="newN">0問</span></span></label>
+    </div>
+  </div>
+
+  <div class="field">
+    <label class="field-label">1回の分量</label>
+    <div class="toggle-row" id="lenRow">
+      <label class="chip on" data-len="10"><span class="box"></span><span class="name">10問</span></label>
+      <label class="chip" data-len="20"><span class="box"></span><span class="name">20問</span></label>
+      <label class="chip" data-len="0"><span class="box"></span><span class="name">全部</span></label>
     </div>
   </div>
 
   <button class="btn btn-primary" id="startBtn" style="width:100%">はじめる</button>
   <p class="hintline">キーボードの 1〜4 で解答、Enter で次へ</p>
+  <div style="text-align:center;margin-top:10px"><button class="linkbtn" id="resetBtn">学習記録をすべて消す</button></div>
 </section>
 
 <!-- ============ 出題 ============ -->
@@ -486,19 +527,48 @@ const GROUPS = [
   {id:"E",name:"共通基盤と主担当",sub:"5アクティビティと責任者"}
 ];
 
+/* ================= 安定ID（問題を後から足しても記録が壊れない） ================= */
+(()=>{const c={};DATA.forEach(d=>{c[d.f]=(c[d.f]||0)+1;d.id="f"+d.f+"-"+c[d.f];});})();
+const byId = id => DATA.find(d=>d.id===id);
+
+/* ================= 保存 ================= */
+const KEY = "pgl-route-drill/v1";
+let store = {stats:{}, session:null, history:[]};
+let canSave = true;
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw) store = Object.assign(store, JSON.parse(raw));
+    localStorage.setItem(KEY+"/probe","1"); localStorage.removeItem(KEY+"/probe");
+  }catch(e){ canSave = false; }
+}
+function save(){ if(!canSave) return; try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){ canSave=false; } }
+
+/* 苦手＝一度でも間違えた、かつ そのあと2回連続で正解できていない */
+const stat = d => store.stats[d.id];
+const isWeak = d => { const s=stat(d); return !!s && s.ng>0 && s.streak<2; };
+const isNew  = d => !stat(d);
+
 /* ================= 状態 ================= */
 let deck=[], idx=0, answered=false, results=[], picked=[];
 let selGroups = new Set(GROUPS.map(g=>g.id));
-let ordMode = "shuffle";
+let pickMode = "all", lenMode = 10;
 
 const $ = s=>document.querySelector(s);
 const shuffle = a=>{const b=a.slice();for(let i=b.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[b[i],b[j]]=[b[j],b[i]]}return b};
 
 /* ================= スタート画面 ================= */
+function pool(){
+  let l = DATA.filter(d=>selGroups.has(d.g));
+  if(pickMode==="weak") l = l.filter(isWeak);
+  if(pickMode==="new")  l = l.filter(isNew);
+  return l;
+}
+
 function renderGroups(){
   $("#groupChips").innerHTML = GROUPS.map(g=>{
     const n = DATA.filter(d=>d.g===g.id).length;
-    return `<label class="chip on" data-g="${g.id}">
+    return `<label class="chip${selGroups.has(g.id)?" on":""}" data-g="${g.id}">
       <span class="box"></span>
       <span class="name">${g.name}<br><span style="font-weight:400;font-size:12px;color:var(--muted)">${g.sub}</span></span>
       <span class="count">${n}問</span>
@@ -510,28 +580,109 @@ function renderGroups(){
       const g = el.dataset.g;
       if(selGroups.has(g)){ if(selGroups.size===1) return; selGroups.delete(g); el.classList.remove("on"); }
       else { selGroups.add(g); el.classList.add("on"); }
+      refreshCounts();
     });
   });
 }
-document.querySelectorAll(".toggle-row .chip").forEach(el=>{
-  el.addEventListener("click",e=>{
-    e.preventDefault();
-    document.querySelectorAll(".toggle-row .chip").forEach(x=>x.classList.remove("on"));
-    el.classList.add("on"); ordMode = el.dataset.mode;
+function bindRow(sel, attr, cb){
+  document.querySelectorAll(sel+" .chip").forEach(el=>{
+    el.addEventListener("click",e=>{
+      e.preventDefault();
+      if(el.classList.contains("off")) return;
+      document.querySelectorAll(sel+" .chip").forEach(x=>x.classList.remove("on"));
+      el.classList.add("on"); cb(el.dataset[attr]);
+    });
   });
-});
+}
+bindRow("#pickRow","pick",v=>{ pickMode=v; refreshCounts(); });
+bindRow("#lenRow","len",v=>{ lenMode=+v; });
+
+function refreshCounts(){
+  const base = DATA.filter(d=>selGroups.has(d.g));
+  const w = base.filter(isWeak).length, n = base.filter(isNew).length;
+  $("#weakN").textContent = w+"問";
+  $("#newN").textContent = n+"問";
+  document.querySelector('#pickRow .chip[data-pick="weak"]').classList.toggle("off", w===0);
+  document.querySelector('#pickRow .chip[data-pick="new"]').classList.toggle("off", n===0);
+  if((pickMode==="weak"&&w===0)||(pickMode==="new"&&n===0)){
+    pickMode="all";
+    document.querySelectorAll("#pickRow .chip").forEach(x=>x.classList.remove("on"));
+    document.querySelector('#pickRow .chip[data-pick="all"]').classList.add("on");
+  }
+  $("#startBtn").textContent = pool().length ? "はじめる" : "対象の問題がありません";
+  $("#startBtn").disabled = !pool().length;
+}
+
+function renderHome(){
+  /* 中断していたセッション */
+  const s = store.session;
+  if(s && s.ids && s.idx < s.ids.length){
+    $("#resumeSlot").innerHTML = `<div class="resume">
+      <div class="rlabel">中断中</div>
+      <p class="rtext">前回の続きが残っています。<b>${s.idx}</b> / ${s.ids.length} 問まで解答済み。</p>
+      <button class="btn btn-primary" id="resumeBtn" style="width:100%">続きから再開する</button>
+    </div>`;
+    $("#resumeBtn").addEventListener("click",resume);
+  } else $("#resumeSlot").innerHTML = "";
+
+  /* 累計記録 */
+  const ids = Object.keys(store.stats);
+  if(ids.length){
+    const tot = ids.reduce((a,k)=>a+store.stats[k].ok+store.stats[k].ng,0);
+    const ok  = ids.reduce((a,k)=>a+store.stats[k].ok,0);
+    const weak = DATA.filter(isWeak).length;
+    const rows = GROUPS.map(g=>{
+      const gs = DATA.filter(d=>d.g===g.id&&stat(d));
+      if(!gs.length) return `<div class="rec-row"><span class="rn">${g.name}</span><span class="rb"></span><span class="rv">—</span></div>`;
+      const o = gs.reduce((a,d)=>a+stat(d).ok,0), t = gs.reduce((a,d)=>a+stat(d).ok+stat(d).ng,0);
+      const p = Math.round(o/t*100);
+      return `<div class="rec-row"><span class="rn">${g.name}</span><span class="rb"><i style="width:${p}%"></i></span><span class="rv">${p}%</span></div>`;
+    }).join("");
+    $("#recSlot").innerHTML = `<div class="rec">
+      <div class="rec-top">
+        <div class="rec-cell"><div class="n">${Math.round(ok/tot*100)}%</div><div class="l">通算正答率（${tot}回）</div></div>
+        <div class="rec-cell"><div class="n${weak?" warn":""}">${weak}</div><div class="l">苦手として残っている問題</div></div>
+        <div class="rec-cell"><div class="n">${DATA.filter(isNew).length}</div><div class="l">まだ解いていない問題</div></div>
+      </div>
+      ${rows}
+    </div>`;
+  } else {
+    $("#recSlot").innerHTML = canSave ? "" :
+      `<div class="rec"><div class="rec-row"><span class="rn">この環境では学習記録を保存できません。公開URL（GitHub Pages）から開いてください。</span></div></div>`;
+  }
+  refreshCounts();
+}
 
 function begin(list){
   deck = list; idx=0; results=[]; picked=[];
+  store.session = {ids:list.map(d=>d.id), idx:0, results:[]};
+  save();
+  showQuiz();
+}
+function resume(){
+  const s = store.session;
+  deck = s.ids.map(byId).filter(Boolean);
+  idx = Math.min(s.idx, deck.length-1);
+  results = s.results.slice();
+  picked = [];
+  showQuiz();
+}
+function showQuiz(){
   $("#start").classList.add("hide"); $("#result").classList.add("hide"); $("#quiz").classList.remove("hide");
   $("#qTotal").textContent = deck.length;
   buildRail(); render();
   window.scrollTo(0,0);
 }
+
 $("#startBtn").addEventListener("click",()=>{
-  let list = DATA.filter(d=>selGroups.has(d.g));
-  list = ordMode==="shuffle" ? shuffle(list) : list;
+  let list = shuffle(pool());
+  if(lenMode>0) list = list.slice(0,lenMode);
   begin(list);
+});
+$("#resetBtn").addEventListener("click",()=>{
+  if(!confirm("これまでの学習記録をすべて消します。よろしいですか。")) return;
+  store = {stats:{}, session:null, history:[]};
+  save(); renderHome();
 });
 
 /* ================= 進捗レール ================= */
@@ -570,6 +721,12 @@ function choose(chosen){
   const q = deck[idx];
   const ok = chosen === q.a;
   results[idx] = ok;
+
+  const s = store.stats[q.id] || (store.stats[q.id] = {ok:0,ng:0,streak:0,last:0});
+  if(ok){ s.ok++; s.streak++; } else { s.ng++; s.streak = 0; }
+  s.last = Date.now();
+  if(store.session){ store.session.idx = idx+1; store.session.results = results.slice(); }
+  save();
 
   $("#opts").querySelectorAll(".opt").forEach(b=>{
     const i = +b.dataset.i;
@@ -624,6 +781,10 @@ document.addEventListener("keydown",e=>{
 function finish(){
   $("#quiz").classList.add("hide"); $("#result").classList.remove("hide");
   window.scrollTo(0,0);
+  store.history.push({t:Date.now(), ok:results.filter(Boolean).length, n:deck.length});
+  if(store.history.length>60) store.history = store.history.slice(-60);
+  store.session = null;
+  save();
   const n = results.filter(Boolean).length, t = deck.length;
   const pct = Math.round(n/t*100);
   $("#score").innerHTML = `${n}<span> / ${t}　${pct}%</span>`;
@@ -651,14 +812,18 @@ function finish(){
   $("#retryBtn").onclick = ()=>begin(shuffle(missed));
 }
 $("#againBtn").addEventListener("click",()=>{
-  let list = DATA.filter(d=>selGroups.has(d.g));
-  begin(ordMode==="shuffle"?shuffle(list):list);
+  let list = shuffle(pool());
+  if(lenMode>0) list = list.slice(0,lenMode);
+  begin(list);
 });
 $("#homeBtn").addEventListener("click",()=>{
-  $("#result").classList.add("hide"); $("#start").classList.remove("hide"); window.scrollTo(0,0);
+  $("#result").classList.add("hide"); $("#start").classList.remove("hide");
+  renderHome(); window.scrollTo(0,0);
 });
 
+load();
 renderGroups();
+renderHome();
 </script>
 </body>
 </html>
