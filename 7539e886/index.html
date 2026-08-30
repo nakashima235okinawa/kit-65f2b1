@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>ITC過去問題トレーニング</title>
+<style>
+:root{color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:#f5f3ee;color:#18322b;font-family:"Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif;-webkit-font-smoothing:antialiased}
+button{font-family:inherit}
+.hidden{display:none!important}
+.eyebrow{font-size:11px;font-weight:800;letter-spacing:.18em;color:#8a938f}
+.tag{border-radius:999px;background:#18322b;color:#fff;padding:5px 11px;font-size:12px;font-weight:700}
+.tag.pale{background:#e4eee9;color:#2d6557}
+.btn{display:inline-flex;align-items:center;gap:6px;border-radius:10px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;border:1.5px solid #18322b;background:#18322b;color:#fff}
+.btn.outline{background:#fff;color:#18322b;border-color:#d8d5cc}
+.btn.accent{background:#de7254;border-color:#de7254}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn:focus-visible,.choice:focus-within,.qdot:focus-visible{outline:2px solid #de7254;outline-offset:2px}
+/* gate */
+#gate{min-height:100vh;display:grid;place-items:center;padding:24px}
+#gate form{background:#fff;border-radius:24px;padding:36px 32px;width:min(380px,100%);box-shadow:0 10px 40px rgba(40,55,48,.06)}
+#gate input{width:100%;margin-top:18px;padding:13px 14px;border:1.5px solid #deddd7;border-radius:12px;font-size:16px}
+#gate .btn{width:100%;justify-content:center;margin-top:12px}
+#gate .err{color:#a23e27;font-size:13px;margin-top:10px;min-height:1.2em}
+/* app */
+header{border-bottom:1px solid #dcd8cd}
+.hwrap{margin:0 auto;max-width:1120px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between}
+.logo p{margin:0;font-size:11px;font-weight:700;letter-spacing:.22em;color:#de7254}
+.logo div{font-size:18px;font-weight:700;letter-spacing:-.01em}
+.hstat{text-align:right;font-weight:700}
+.hstat span{font-weight:400;color:#6c7b76}
+.bar{margin-top:6px;height:6px;width:112px;border-radius:999px;background:#e9e7e0;overflow:hidden;margin-left:auto}
+.bar i{display:block;height:100%;background:#18322b;transition:width .2s}
+.grid{margin:0 auto;max-width:1120px;padding:28px 20px;display:grid;gap:32px}
+@media(min-width:768px){.grid{grid-template-columns:220px 1fr;padding:40px 20px}}
+aside{display:none}
+@media(min-width:768px){aside{display:block}}
+.dots{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.qdot{display:grid;place-items:center;height:34px;border-radius:10px;border:1px solid #d8d5cc;color:#6b7772;font-size:12px;background:#fff;cursor:pointer}
+.qdot.active{outline:2px solid #18322b;outline-offset:2px}
+.qdot.done{background:#dcebe5;border-color:#c2dbd1;color:#245e4f}
+.linkbtn{margin-top:24px;background:none;border:0;padding:0;font-size:14px;color:#6c7b76;text-decoration:underline;cursor:pointer}
+.qhead{margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.qhead .tags{display:flex;gap:8px}
+.qnum{font-family:Georgia,serif;font-size:18px;font-style:italic;color:#788680}
+article{border-radius:28px;background:#fff;padding:24px;box-shadow:0 10px 40px rgba(40,55,48,.06)}
+@media(min-width:768px){article{padding:40px}}
+article h1{margin:12px 0 0;font-size:20px;font-weight:700;line-height:1.85;white-space:pre-line}
+@media(min-width:768px){article h1{font-size:24px}}
+.choices{margin-top:32px;display:flex;flex-direction:column;gap:12px}
+.choice{display:flex;align-items:center;gap:12px;min-height:64px;border:1.5px solid #deddd7;border-radius:16px;padding:14px 16px;cursor:pointer;transition:.15s;background:#fff}
+.choice:hover{border-color:#7da395;background:#f7faf8;transform:translateY(-1px)}
+.choice input{margin:0;width:16px;height:16px;accent-color:#18322b;flex:none}
+.choice-num{display:grid;place-items:center;width:29px;height:29px;border-radius:50%;background:#f1f0eb;font-weight:800;flex:none}
+.choice span.t{flex:1;line-height:1.75;font-size:15px}
+.choice .mark{flex:none;font-weight:800;font-size:18px}
+.choice.correct{border-color:#48a27d;background:#eef8f3;color:#195d45}
+.choice.wrong{border-color:#df7358;background:#fff3ee;color:#a23e27}
+.choice.muted{opacity:.57;cursor:default}
+.choice.locked{cursor:default;transform:none}
+.feedback{margin-top:24px;padding:20px;border-radius:18px;border-left:5px solid}
+.feedback.ok{background:#eef8f3;border-color:#48a27d}
+.feedback.ng{background:#fff3ee;border-color:#df7358}
+.feedback .head{font-size:18px;font-weight:700}
+.feedback p{margin:12px 0 0;font-size:14px;line-height:1.85;color:#465c55;white-space:pre-line}
+.nav{margin-top:20px;display:flex;align-items:center;justify-content:space-between}
+.note{margin-top:12px;text-align:right;font-size:14px;color:#6c7b76}
+/* result */
+.rwrap{margin:0 auto;max-width:960px;padding:40px 20px}
+@media(min-width:768px){.rwrap{padding:64px 20px}}
+.rtop{margin-bottom:32px;display:flex;align-items:center;justify-content:space-between}
+.result-hero{border-radius:30px;padding:42px 28px;text-align:center;color:#fff;background:radial-gradient(circle at 80% 20%,#3d7969 0,transparent 35%),#18322b}
+.result-hero h1{margin:8px 0 0;font-size:clamp(28px,5vw,46px);font-weight:800}
+.score{margin-top:25px;display:flex;align-items:baseline;justify-content:center;gap:8px}
+.score strong{font-family:Georgia,serif;font-size:clamp(70px,14vw,120px);line-height:.9}
+.score span{font-size:20px}
+.score-rate{margin:14px 0 0;color:#c6ded5;font-weight:700}
+.panel{margin-top:28px;border-radius:28px;background:#fff;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+@media(min-width:768px){.panel{padding:36px}}
+.panel h2{margin:0;font-size:24px}
+.stat{margin-bottom:24px}
+.stat .row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:8px}
+.stat .row b span{color:#587069}
+.badge{margin-left:8px;border-radius:999px;background:#fff0e8;padding:4px 10px;font-size:12px;font-weight:700;color:#b64d31}
+.track{height:12px;overflow:hidden;border-radius:999px;background:#e9e7e0}
+.track i{display:block;height:100%;background:#2d7664}
+.track i.weak{background:#de7254}
+.weakbox{margin-top:32px;border-radius:16px;background:#f5f3ee;padding:20px}
+.weakbox .l{margin:0;font-size:14px;font-weight:700;color:#de7254}
+.weakbox .n{margin:4px 0 0;font-size:20px;font-weight:700}
+.weakbox .d{margin:8px 0 0;font-size:14px;line-height:1.75;color:#587069}
+.actions{margin-top:28px;display:flex;flex-wrap:wrap;gap:12px}
+@media(max-width:640px){.choice{padding:13px 12px;align-items:flex-start}.choice input{margin-top:6px}.choice-num{margin-top:1px}.feedback{padding:17px}.result-hero{padding:34px 20px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<section id="gate">
+  <form id="gateForm" autocomplete="off">
+    <div class="logo"><p>IT COORDINATOR</p><div>過去問題トレーニング</div></div>
+    <input id="pw" type="password" placeholder="パスワード" autofocus>
+    <button class="btn" type="submit">開く</button>
+    <div class="err" id="gateErr"></div>
+  </form>
+</section>
+
+<section id="app" class="hidden">
+  <header><div class="hwrap">
+    <div class="logo"><p>IT COORDINATOR</p><div>過去問題トレーニング</div></div>
+    <div class="hstat"><b><span id="doneN"></span><span> / <span id="totalN"></span>問</span></b><div class="bar"><i id="barFill"></i></div></div>
+  </div></header>
+  <div class="grid">
+    <aside><p class="eyebrow" style="margin:0 0 12px">QUESTIONS</p><div class="dots" id="dots"></div><button class="linkbtn" id="resetSide">回答をリセット</button></aside>
+    <section>
+      <div class="qhead"><div class="tags"><span class="tag" id="tLevel"></span><span class="tag pale" id="tCat"></span></div><span class="qnum" id="qnum"></span></div>
+      <article>
+        <p class="eyebrow" id="topic" style="margin:0"></p>
+        <h1 id="prompt"></h1>
+        <div class="choices" id="choices"></div>
+        <div id="feedback" class="hidden"></div>
+      </article>
+      <div class="nav"><button class="btn outline" id="prevBtn">← 前の問題</button><button class="btn" id="nextBtn">次の問題 →</button><button class="btn accent hidden" id="finishBtn">結果を見る</button></div>
+      <p class="note hidden" id="unanswered"></p>
+    </section>
+  </div>
+</section>
+
+<section id="result" class="hidden"><div class="rwrap">
+  <div class="rtop"><div class="logo"><p>IT COORDINATOR</p><div>過去問題トレーニング</div></div><button class="btn outline" id="resetTop">↺ 最初から</button></div>
+  <div class="result-hero"><p class="eyebrow" style="color:#c6ded5;margin:0">RESULT</p><h1>おつかれさまでした</h1><div class="score"><strong id="rScore"></strong><span id="rTotal"></span></div><p class="score-rate" id="rRate"></p></div>
+  <div class="panel"><p class="eyebrow" style="margin:0 0 4px">CATEGORY REVIEW</p><h2>分野別の結果</h2><div id="stats" style="margin-top:24px"></div>
+    <div class="weakbox"><p class="l">あなたの苦手分野</p><p class="n" id="weakName"></p><p class="d">まずこの分野の間違えた問題を見直すと、効率よく得点を伸ばせます。</p></div>
+    <div class="actions"><button class="btn" id="reviewBtn">問題を見直す</button><button class="btn outline" id="resetBottom">↺ もう一度挑戦</button></div>
+  </div>
+</div></section>
+
+<script>
+const QUESTIONS = [{"id": 1, "prompt": "デジタル経営を支える人材としてのデジタル経営推進者の役割はどれか。", "choices": ["ITシステムが生み出す事業価値を認識し，開発チームを率いる。", "経営者の命を受けて，デジタル経営を推進し，実現させる。", "経営者の求めに応じて，外部の専門家として助言や支援をする。", "デジタル経営の方向性を示し，変革実行に向けた動機づけを行う。"], "correct": 2, "explanation": "デジタル経営を進める人材または組織を「デジタル経営推進者」と定義している。デジタル経営推進者の基本的なミッションは「デジタル経営を推進し，実現させること」である（ITコーディネータプロセスガイドライン第1部第3章O-1 実践のキーパーソンはデジタル経営推進者）。したがって解答2が正解。解答1は誤り。「ITシステムが最終的に生み出す事業価値をしっかり認識した上で，開発チームを率いる」ことは開発リーダーの役割である。（ITコーディネータプロセスガイドライン第1部第3章O-1）解答3は誤り。外部の専門家として助言や支援をすることは，デジタル経営支援者の役割である。（ITコーディネータプロセスガイドライン第1部第3章O-1）解答4は誤り。「デジタル経営の方向性や目標を示し，経営の変革実行に向けた動機づけを行う」は経営者の役割である。（ITコーディネータプロセスガイドライン第1部第3 章O-1）", "level": "基本", "category": "デジタル経営", "topic": "人材と役割"}, {"id": 2, "prompt": "変革・成長プロセスは，デジタル経営戦略プロセスにおけるデジタル経営戦略達成度評価をインプットにする。インプット項目の適切な組み合わせはどれか。ａ．ITサービスの利活用状況ｂ．外部環境の変化ｃ．内部環境におけるデジタル経営成熟度に関係する部分ｄ．パフォーマンス指標の達成度", "choices": ["ａ，ｂ", "ａ，ｄ", "ｂ，ｃ", "ｃ，ｄ"], "correct": 3, "explanation": "変革・成長プロセスにインプットするための，デジタル経営戦略プロセスにおけるデジタル経営戦略達成度評価結果の項目を問う問題である。ａ．ITサービスの利活用状況は，提供価値検証プロセスでの検証項目である。（PGL第3 部第4章P6-2-タスク1）ｄ．パフォーマンス指標の達成度は，モニタリング＆コントロールの確認項目である。（PGL第4部第3章CB3-2-タスク1）ｂ．外部環境の変化や，ｃ．内部環境におけるデジタル経営成熟度に関係する部分は，共に変革・成長プロセスへのインプット項目である。（PGL第2部第1章P1-1-⑴）適切なインプット項目の組合せとしては，ｂ，ｃが該当する。したがって解答3が正解。解答1は誤り。ａ ITサービスの利活用状況は提供価値検証プロセスでの検証項目である。（ITコーディネータプロセスガイドライン第3部第4章P6-2-タスク1）解答2は誤り。ａ，ｄ共に変革・成長プロセスのインプットではない。解答4は誤り。ｄパフォーマンス指標の達成度はモニタリング＆コントロールの確認項目である。（ITコーディネータプロセスガイドライン第4部第3章CB3-2-タスク1）", "level": "基本", "category": "変革・成長", "topic": "変革・成長プロセス"}, {"id": 3, "prompt": "デジタル経営戦略プロセスにおける活動はどれか。", "choices": ["アンケート等でITサービスの利活用に関する要望や不満等の顧客の声の収集を行う。", "企業の競争力強化を目指して，経営の成熟度に応じたIT戦略の実行計画を策定する。", "デジタル経営成熟度の評価結果に加え，変革の実現に関する内部環境情報を収集する。", "目標とするシステムの機能や計画した概算費用を考慮して，提案依頼書を作成する。"], "correct": 3, "explanation": "デジタル経営戦略プロセスの活動を理解しているかを問う問題である。デジタル経営戦略プロセスにおける経営環境情報の収集では，デジタル経営成熟度レベルの向上アクティビティで評価した成熟度の情報に加え，変革の実現に関する内部環境情報を収集する(ITコーディネータプロセスガイドライン第2部第2章P2-2-タスク1-② )。したがって解答3が正解。解答1は誤り。提供価値検証プロセスにおける IT サービス利活用の検証の活動である。(ITコーディネータプロセスガイドライン第3部第4章P6-2タスク1) 解答2は誤り。デジタル経営実行計画プロセスにおける開発・導入計画の作成の活動である。(ITコーディネータプロセスガイドライン第3部第1章P3-2-タスク8) 解答4は誤り。IT開発・導入プロセスにおけるIT開発アクティビティの活動である。(IT コーディネータプロセスガイドライン第3部第2章P4-2-タスク2-1)", "level": "基本", "category": "変革・成長", "topic": "デジタル経営戦略"}, {"id": 4, "prompt": "デジタル経営実行計画プロセスで行うことはどれか。", "choices": ["ITをはじめとするデジタル技術が，中長期的に経営や事業にどのように貢献するか，目指す姿や目標を検討する。", "外部環境の変化やデジタル経営戦略の結果を踏まえて，変革の必要性を認識し，顧客へ提供する新たな価値の可能性を発見する。", "顧客価値やビジネスモデルを実現するためのサービス・製品を定義し，業務プロセスやシステムの目指す姿を設計する。", "“提供する価値”を強く意識し，価値提供のために必要な部品や機能，インターフェース，品質等の仕組みを整える。"], "correct": 3, "explanation": "デジタル経営実行計画プロセスでは，デジタル経営戦略で定義された顧客価値やビジネスモデルを実現するためのサービス・製品を定義し，業務プロセスやシステムの目指す姿を設計する（ITコーディネータプロセスガイドライン第3部第1章 P3-1）。したがって解答3が正解。解答1は誤り。デジタル経営戦略プロセスのデータ・IT利活用方針の定義で行うことである。（ITコーディネータプロセスガイドライン第2部第2章 P2-2-タスク4-1）解答2は誤り。変革・成長プロセスの変革認識アクティビティで行うことである。（IT コーディネータプロセスガイドライン第2部第1章 P1-1-(2)-タスク3）解答4は誤り。IT開発・導入プロセスのIT開発アクティビティで行うことである。（IT コーディネータプロセスガイドライン第3部第2章 P4-2）", "level": "基本", "category": "価値実現", "topic": "実行計画"}, {"id": 5, "prompt": "RFPを発行し，外部のサービス開発・提供者を選定する際に留意すべきものはどれか。", "choices": ["RFPの要求事項を満たしていない提案でも対象外とせず，基準に則って評価する。", "機密保持の観点から，採択されなかった提案については評価結果だけを通知する。", "提案依頼対象者から個別に質問を受けた場合，回答や補足説明は個別に対応する。", "提案内容が理解できないときは，デモや事例紹介を要求し，提案内容を確認する。"], "correct": 4, "explanation": "提案受領において，「提案文書だけでは提案内容が理解できないときは必要に応じてデモンストレーションや事例紹介を要求し，提案内容を確認する」とある（ITコーディネータプロセスガイドライン第3部第2章P4-2-タスク2留意点）。したがって解答4が正解。解答1は誤り。要求内容を満たしていない提案をそのまま評価するのは適切ではない。「要求内容を満たしていない提案に対しては再提案を促すか，対象外とするかを判断する」とされている。（ITコーディネータプロセスガイドライン第3部第2章P4-2-タスク2 留意点）解答2は誤り。選定時には，「選定外となった外部のサービス開発・提供者に非採択の理由を通知する」とされている。（ITコーディネータプロセスガイドライン第3部第2章 P4-2-タスク2-1）解答3は誤り。提案依頼対象者から個別に質問を受けた場合でも，質問に対する回答や補足説明はすべての提案依頼対象者に平等に開示して伝える必要がある。（ITコーディネータプロセスガイドライン第3部第2章P4-2-タスク2-1）", "level": "基本", "category": "価値実現", "topic": "IT開発"}, {"id": 6, "prompt": "IT導入アクティビティにおいて，IT導入実行計画書を策定する役割を担うのは誰か。", "choices": ["運用リーダー", "開発リーダー", "デジタル経営推進者", "デジタル経営推進者・開発リーダー・運用リーダーの共同作業"], "correct": 2, "explanation": "開発リーダーは，システム導入計画に従ってタスクにブレイクダウンし，タスクごとの担当部門，役割と責任，期日等を明確化したIT導入計画書を作成する（ITコーディネータプロセスガイドライン第3部第2章P4-3）。したがって解答2が正解。解答1は誤り。運用リーダーは，ITの運用等に関する問題がないかを検証するため，IT 導入計画に積極的に参加し，開発リーダーとの連携・協力・支援を行う。（ITコーディネータプロセスガイドライン第3部第2章 P4-3-タスク2）解答3は誤り。デジタル経営推進者は，開発リーダーからの報告を受けて，ITサービス利活用開始の承認を行う役割を担う。（ITコーディネータプロセスガイドライン第3部第２章 P4-3-タスク2）解答4は誤り。開発リーダ・運用リーダ・デジタル経営推進者は，それぞれの役割（責任）を担って参加するものである（ITコーディネータプロセスガイドライン第3部第2章 P4-3-タスク2）。したがって共同作業というわけではない。", "level": "基本", "category": "価値実現", "topic": "IT導入"}, {"id": 7, "prompt": "価値提供・運用プロセスの説明はどれか。", "choices": ["ITによって実現される価値を意識し，価値を最大化するための仕組みづくりを行う。", "提供価値を意識して，導入されたITサービスを利活用して顧客への価値提供を行う。", "デジタル経営成熟度を確認し，デジタル経営戦略の策定と展開，実行後の評価を行う。", "デジタル経営戦略企画書に基づいて，開発・導入計画を作成する。"], "correct": 2, "explanation": "価値提供・運用プロセス(P5)の説明であり，当プロセスはIT利活用による価値の提供 (P5-1)とITサービス運用(P5-2)で構成される。提供価値を意識して，導入されたIT サービスを利活用・運用して価値の提供を行うプロセスである(ITコーディネータプロセスガイドライン第3部第3章P5-1)。したがって解答2が正解。解答1は誤り。IT開発・導入プロセス(P4)の説明であり，IT 開発・導入プロセス(P4) は，IT 開発（P4-1) とIT 導入(P4-2) の２つのアクティビティで構成され，IT によって実現される価値を最終成果として強く意識し，価値を最大化するための仕組みづくりを行うプロセスである。(ITコーディネータプロセスガイドライン第3部第2章 P4-1) 解答3は誤り。デジタル経営戦略プロセス(P2)の説明であり，変革・成長プロセス(P1) で作成された変革構想とデジタル経営成熟度の評価及び成長計画を受けて，デジタル経営戦略の策定と展開，実行後の評価を行うプロセスである。（ITコーディネータプロセスガイドライン第 2部第2章P2-1）解答4は誤り。デジタル経営実行計画プロセス(P3)の説明であり，デジタル経営戦略で定義された顧客価値やビジネスモデルを実現するためのサービス・製品を定義し，業務プロセスやシステムの目指す姿を設計する。現状を調査・分析し，課題とその解決策を明確にした上で，解決策を実行するための必要な取り組みを実行計画としてアウトプットするプロセスである。(ITコーディネータプロセスガイドライン第3部第1章 P3-1)", "level": "基本", "category": "価値実現", "topic": "価値提供・運用"}, {"id": 8, "prompt": "提供価値検証プロセスでは，ITサービス利活用の検証，業務工程や手順の検証および提供価値の検証を実施する。計画通り価値提供がなされたかどうかを検証する対象として適切な組合せはどれか。 a．ITサービス利活用者の利用者数や利用頻度 b．ITサービスの使いやすさに関する意見 c．ITサービス操作マニュアルの活用状況 d．ITサービス提供による問題解決の寄与状況", "choices": ["a，b", "a，c", "b，d", "c，d"], "correct": 3, "explanation": "a.の「利用者数や利用頻度」はITサービスの利活用状況のSLA指標である。(ITコーディネータプロセスガイドライン第3部第4章P6-2-タスク1) b.の「使いやすさに関する意見」は利用者からのフィードバックであり，価値提供の検証の観点である。(PGL第3部第4章2-3) c.の「活用状況」はITサービスの業務効率や手順に関する検証の観点である。(ITコーディネータプロセスガイドライン第3部第4章P6-2-タスク2) d.の「問題解決の寄与状況」は業務関係者からのフィードバック情報であり，提供価値が計画通りであるか検証の観点となる(ITコーディネータプロセスガイドライン第3部第 4章P6-2-タスク3)。したがって検証の観点として望ましいbとdを含んでいる解答3が正解。解答1は誤り。指標として不適切なaを含んでいる。解答2は誤り。指標として不適切なaとcを含んでいる。解答4は誤り。指標として不適切なcを含んでいる。", "level": "基本", "category": "価値実現", "topic": "提供価値検証"}, {"id": 9, "prompt": "決められた期間内に特定の結果を達成することに重点を置くマネジメントはどれか。", "choices": ["サイクルマネジメント", "プログラムマネジメント", "プロジェクトマネジメント", "ポートフォリオマネジメント"], "correct": 3, "explanation": "プロジェクトマネジメントは，決められた期間内に特定の結果を達成することに重点を置く（ITコーディネータプロセスガイドライン第4部第1章CB1-1)。したがって解答3が正解。解答1は誤り。サイクルマネジメントは，適用すべきプロセスとフローを最適化することで，デジタル経営の効率と効果を最大化する，包括的・構造的なアプローチである。（ITコーディネータプロセスガイドライン第4部第1章CB1-1) 解答2は誤り。ポートフォリオを見据えプロジェクトの全体管理により価値実現を行うマネジメントである。（ITコーディネータプロセスガイドライン第4部第1章CB1-２-タスク2) 解答4は誤り。多くの組織的イニシャティブ（プログラム，プロジェクト，その他の活動）を継続的に評価するマネジメントである。（ITコーディネータプロセスガイドライン第4部第1章CB1-2-タスク2)", "level": "基本", "category": "共通基盤", "topic": "サイクルマネジメント"}, {"id": 10, "prompt": "効果的なコミュニケーション方式の設定に必要な具体例をすべて挙げた組み合わせはどれか。 a．コミュニケーションの目的の明確化 b．コミュニケーションの頻度の明確化 c．組織文化のコミュニケーション方式への適用 d．適切なコミュニケーション手段の選択", "choices": ["a，b，c", "a，b，d", "a，c，d", "b，c，d"], "correct": 2, "explanation": "コミュニケーション方式設定の具体例として以下のようなものがある（ITコーディネータプロセスガイドライン第4部第2章CB2-2タスク1）。コミュニケーションの目的と頻度を明確にする（ａ，ｂに該当），コミュニケーションの手段を適切に選択する（ｄに該当）。一方でコミュニケーション方式の定着は組織文化に影響するという選択肢ｃは，この中では不適切であり必要な具体例とは言い難い。したがってa，b，dが正解の組み合わせであり，したがって解答2が正解。解答1は誤り。不適切な選択肢ｃを含み適切な選択肢dが含まれていないため。解答3は誤り。不適切な選択肢ｃを含み適切な選択肢bが含まれていないため。解答4は誤り。不適切な選択肢ｃを含み適切な選択肢aが含まれていないため。", "level": "基本", "category": "共通基盤", "topic": "コミュニケーション"}, {"id": 11, "prompt": "モニタリング＆コントロールで収集・蓄積したデータの分析・評価・報告において，照合する対象として最も重視すべきサイクルまたはプロセスはどれか。", "choices": ["価値実現サイクル", "デジタル経営成長サイクル", "デジタル経営戦略プロセス", "変革・成長プロセス"], "correct": 1, "explanation": "モニタリング＆コントロールは，価値実現サイクル(C2)の各プロセスのパフォーマンスを捕捉・分析し，目標達成に向けて改善していく活動である。パフォーマンス指標の確認やモニタリングと分析を通じて,各プロセスのパフォーマンスを向上させ，デジタル経営の成功につなげる。パフォーマンスデータの分析・評価として，モニタリング＆コントロールで収集・蓄積したデータは，価値実現サイクル全体の視点から統合し，計数値/計量値サンプリングやパレート図，管理図等を用いて分析・評価・レポーティングする必要があるとされている（ITコーディネータプロセスガイドライン第4部第3章2-タスク3-③）。したがって解答1が正解。解答2は誤り。デジタル経営成長サイクルは，経営環境の変化を的確に捉え，変革のための戦略を策定するサイクルである。策定した戦略は価値実現サイクルで実行され，成果がフィードバックされるが(ITコーディネータプロセスガイドライン第2部前文1），モニタリング＆コントロールの実行に関わるサイクルではない。解答3は誤り。デジタル経営戦略プロセスは，変革・成長プロセスで作成された変革構想とデジタル経営成熟度の評価及び成長計画を受けて，デジタル経営戦略の策定と展開，実行後の評価を行う（ITコーディネータプロセスガイドライン第2部第2章）。モニタリング＆コントロールの対象ではない。解答4は誤り。変革・成長プロセスは，組織の現状と変革の必要性を認識した上で，デジタル経営成熟度を次のステップへ成長させる（ITコーディネータプロセスガイドライン第2部第1章）とあり，成熟度という尺度からのレベル評価や目標設定を行うステップである。パフォーマンスやモニタリング＆コントロールの対象ではない。", "level": "基本", "category": "共通基盤", "topic": "モニタリング＆コントロール"}, {"id": 12, "prompt": "ITシステムのセキュリティ対策・対応が不十分な場合は何らかの改善が必要である。“セキュリティ計画の継続的改善”としての活動はどれか。", "choices": ["改善が必要と判断した場合は，各システムの脅威・脆弱性をもとにした影響分析・評価の見直しを行う。", "改善が必要と判断した場合は，各プロセスからのセキュリティ状況の把握・管理の見直しを行う。", "組織全体の改善が必要な場合は，デジタル経営成熟度レベルの向上アクティビティにフィードバックを行う。", "組織全体の改善が必要な場合は，デジタル経営戦略プロセスの“評価段階”にフィードバックを行う。"], "correct": 3, "explanation": "組織全体として改善を行う必要がある課題については，デジタル経営成熟度レベルの向上アクティビティ（P1-2）にフィードバックを行うことにより，組織全体としての変革・成長を支援する（ITコーディネータプロセスガイドライン第4部第4章 CB4-2-タスク6）。したがって解答3が正解。解答1は誤り。改善が必要と判断した場合は，タスク3”セキュリティレベル・指標の策定”にフィードバックを行う。（ITコーディネータプロセスガイドライン第4部第4章 CB4-2-タスク6）解答2は誤り。改善が必要と判断した場合は，タスク3”セキュリティレベル・指標の策定”にフィードバックを行う。（ITコーディネータプロセスガイドライン第4部第4章 CB4-2-タスク6）解答4は誤り。組織全体として改善を行う必要がある課題については，デジタル経営成熟度レベルの向上アクティビティ（P1-2）にフィードバックを行う。（ITコーディネータプロセスガイドライン第4部第4章 CB4-2-タスク6）", "level": "基本", "category": "共通基盤", "topic": "モニタリング＆コントロール"}, {"id": 13, "prompt": "デジタル経営のレベルを向上させるために重要な，組織学習を主導する者は誰か。", "choices": ["運用リーダー", "開発リーダー", "経営者", "デジタル経営推進者"], "correct": 3, "explanation": "組織学習は全社的な広範囲な活動であるため，経営者のリーダーシップと多くの部門の連携を必要とする。(CB5-1）組織学習は，デジタル経営の継続的な改善と発展のために重要な活動であるため，経営者が主導する必要がある（ITコーディネータプロセスガイドライン第4部CB 登場人物と役割経営者より）。したがって解答3が正解。解答1は誤り。運用リーダーは，組織学習を主導すべき経営者を補佐する役割を担う。（ITコーディネータプロセスガイドライン第4部CB 登場人物と役割より）解答2は誤り。開発リーダーは，組織学習を主導すべき経営者を補佐する役割を担う。（ITコーディネータプロセスガイドライン第4部CB 登場人物と役割より）解答4は誤り。デジタル経営推進者は，組織学習を主導すべき経営者を補佐する役割を担う。（ITコーディネータプロセスガイドライン第4部CB 登場人物と役割より）", "level": "基本", "category": "共通基盤", "topic": "組織学習"}, {"id": 14, "prompt": "A社は，3年前にシステム更改を完了し運用を開始したが，世の中の大きな状況変化を捉えて，中長期的な変化の必要性を認識し,変革の可能性を発見し経営として変革への意思決定に至った。〈評価項目〉を定め，デジタル経営成熟度を評価した結果，すべての評価項目がレベル1またはレベル2であった。レベル目標を設定するにあたって適切なものはどれか。〈評価項目〉・デジタル経営マインド・デジタル経営ガバナンス・デジタル環境・デジタル利活用", "choices": ["経営者と製造現場の特性を生かし，全ての部門がレベル5になるよう対応が求められる。", "現時点の成熟度が低いデジタル利活用は，レベル3まで成長させるかがひとつの目安になる。", "得意分野は高い成熟度を達成してパフォーマンスを向上させることが重要である。", "見直しに伴い，必要な最新IT技術への対応を洗い出し，目標レベルを5に設定する。"], "correct": 2, "explanation": "現時点の成熟度がレベル0，1，2である場合は，どれくらいの期間をかけて，全ての項目をレベル3まで成長させるかがひとつの目安になる。また，その場合もレベル0から急にレベル3にするのではなく，1段階ずつレベルアップさせていく必要がある（ITコーディネータプロセスガイドライン第2部第1章2-(2)-タスク2）。したがって解答2が正解。解答1は誤り。設定する目標について，全てをレベル5で設定すれば良いというものではなく，段階的に成長させていく必要がある。（ITコーディネータプロセスガイドライン第2部第1章2-(2)-タスク2）解答3は誤り。デジタル経営成熟度は，ある特定の視点や項目のみが突出してい成熟度を達成していても，全体のパフォーマンスは向上しない。バランスよく全体の項目の成熟度を成長させていくことが重要である。（ITコーディネータプロセスガイドライン第 2部第1章2-(2)-タスク2）解答4は誤り。設定する目標について，全てをレベル5で設定すれば良いというものではなく，段階的に成長させていく必要がある。（ITコーディネータプロセスガイドライン第2部第1章2-(2)-タスク2）", "level": "応用", "category": "変革・成長", "topic": "変革・成長プロセス"}, {"id": 15, "prompt": "中堅製造業A社は，事業再編も視野に入れた経営改革に取り組んでいる。経営戦略策定に先立って，経営環境情報の収集を進めている。経営資源に関する情報の収集に該当するものはどれか。", "choices": ["業務プロセスに関する業界の自主ルールの将来動向を調査する。", "社外のベストプラクティスにおけるリスク管理の状況を調査する。", "従業員が保有するスキル・ノウハウの評価基準を設定して調査する。", "取引額の大きいビジネスパートナーの内部環境について調査する。"], "correct": 3, "explanation": "社員の業務経験やスキル・ノウハウは，極めて重要な経営資源である。スキルズインベントリ等にまとめ，継続的に活用できるようにすべきである（ITコーディネータプロセスガイドライン第2部第2章P2-2タスク1-②）。したがって解答3が正解。解答1は誤り。業界の自主ルールが経営資源のひとつである業務プロセスに関係してくることはあり得るが，業界ルールそのものの将来動向は，外部環境情報として収集される。（ITコーディネータプロセスガイドライン第2部第2章P2-2タスク1-1）解答2は誤り。社外のベストプラクティスは，自社の経営資源のあり方に対して参考にすべきもので，外部環境情報として収集される。（ITコーディネータプロセスガイドライン第2部第2章P2-2タスク1-1）解答4は誤り。経営資源に関する情報収集は，内部環境情報収集の一環として行われる。ビジネスパートナに関する調査は，外部環境情報として収集される。（ITコーディネータプロセスガイドライン第2部第2章P2-2タスク1-1）", "level": "応用", "category": "変革・成長", "topic": "デジタル経営戦略"}, {"id": 16, "prompt": "中堅のアパレル業A社は，複数の企業を買収して，取扱いブランドと店舗展開を拡大してきた。情報システムは，買収企業のものを継続的に使用している。さらなる成長に向けた分析と戦略策定には，商品の統合的な管理が急務である。効果的な商品管理を短期間で実現する方法はどれか。", "choices": ["ERPパッケージを全社一括導入し，業界のベストプラクティスを実現する。", "新たな商品管理システムの要件を定義し，個別開発方式で新規に構築する。", "業界で多く採用されているSaaSを選定し，利用機能や機能連携を検討する。", "それぞれの既存システムの商品管理を強化するための，追加機能を開発する。"], "correct": 3, "explanation": "デジタル経営実行計画プロセスにおける，IT資源調達計画で重視すべきポイントを問う問題。システム実現には複数の方法があるが，どれかひとつが絶対的に有効な訳ではなく，当該企業の状況や対象となるシステム内容に応じて，最適なシステム実現方法を検討し，選択する必要がある。将来の環境変化を念頭において，既存技術や新技術，次世代技術の寿命や有効性を調査し，既存IT環境とデジタル経営成熟度との整合性と，移行性や実現性，導入効果とリスク等を総合的に評価する（ITコーディネータプロセスガイドライン第3部第1章-2-タスク7）。本問は，変化する市場環境における商品の統合的な管理を短期間で実現するためのIT導入方式の検討である。業界で多く採用されている商品管理SaaSを利用すれば短期間でのシステム導入が可能であり，カスタマイズや他システムの連携によって市場環境への柔軟な対応強化の開発も可能になる。したがって解答 3が正解。解答1は誤り。ERPパッケージを全社一括導入する場合，業界のベストプラクティスの実現を目指すことができる長所があるが，商品管理システムの単体を短期間で再構築する場合には適切とはいえない。解答2は誤り。個別開発は，要求仕様を詳細に検討できる反面，仕様の決定に時間がかかり開発期間が長期化する点が短所である。短期間で，市場環境に柔軟に対応できるシステム導入を行う場合，有効な方策とは考えられない。解答4は誤り。既存のシステムをもとに，商品管理機能だけ追加するのでは，柔軟な対応が困難になる可能性がある。", "level": "応用", "category": "価値実現", "topic": "実行計画"}, {"id": 17, "prompt": "A社では基幹業務システムの再構築に取り組んでいる。関係部門間で合意した新業務プロセスや要件に基づき開発に着手したところ，採用した業務パッケージや入力項目数の関係から，ある業務部門の負荷が増大することが判明した。当該部門長より，負荷軽減対策を求める苦情が寄せられた場合に，採るべき対応はどれか。", "choices": ["改善要望として，必要性や優先度，計画全体への影響を考慮し要否を決定する。", "入力の負荷軽減のために，処理の自動化を目指して新たな技術を追加採用する。", "負荷が増大する業務部分に対し，他の業務パッケージの適用を早急に決定する。", "要件の見直しを行い，全社的に負荷分散が図られるように業務の再設計を行う。"], "correct": 1, "explanation": "開発により要件の実現を行う中で，不足している機能や顧客満足につながる新たな価値に気が付いた場合は，提供価値検証プロセス(P6)へ，その気づきを共有する。（ITコーディネータプロセスガイドライン第3部第2章P4-2-タスク3）また新しい機能の追加・変更は，必要性や優先度・開発計画全体への影響を吟味した上で行う必要がある（第3部第2章P4-2-タスク3-留意点）。本ケースの場合，改善要望として提供価値検証プロセスに共有し，必要性や優先度・開発計画全体への影響を吟味した上で対策を実施すべきである。したがって解答1が正解。解答2は誤り。自動化はシステム処理方式の一手段であるが，この段階で既に決定した要件や仕様を大きく変更することは適切ではない。新しい機能の追加・変更は，必要性や優先度・開発計画全体への影響を十分検討した上で実施すべきである。解答3は誤り。すでに開発に入っている段階で採用パッケージを追加・変更するのは，開発計画全体への影響が大きく安易に決定すべきではない。まず必要性や優先度を考慮して，決定した業務パッケージ活用を前提とした対応策を考えるべきである。解答4は誤り。提供価値の実現と言う目標から考えると，データ登録など，ある部門の業務負荷が増えることはやむを得ない場合もあり，この段階で要件の見直しや業務再設計を行うことは適切ではない。", "level": "応用", "category": "価値実現", "topic": "IT開発"}, {"id": 18, "prompt": "中堅の製造業A社は，現行基幹システムの開発を担ったサービス開発・提供者B 社と共同で基幹刷新プロジェクトを進めており，IT資源の配備・展開準備中である。本番稼働後の一定期間内に予期せぬ重大トラブルが発生した場合に備えて，現行システムへの切り戻し計画を策定することになった。A社が採るべき対応はどれか。", "choices": ["並行運用移行などシステム導入計画の見直しも含め，開発リーダ－主体で策定し関係者の合意を得る。", "現場での切り戻し作業の主体となる運用リーダーが，開発リーダーやB社の助言を得ながら策定する。", "新旧両システムに精通しているB社に，IT導入実行計画書へ切り戻し計画を追記するように依頼する。", "本番移行に失敗した場合の復旧手順を軸として，切り戻し計画をデジタル経営推進者主体で策定する。"], "correct": 1, "explanation": "基幹システム本番稼働後の”切り戻し”計画に関する問題である。本番稼働後の切り戻しは，システムだけでなく，在庫・入出荷などのデータを元に戻し，一旦止めた旧システムにデータを入れ直すなど，機能ごとの複雑な対応が必要となることが多い。企業活動に甚大な影響を与えるため，切り戻し計画発動に至らない準備や，切り戻し作業自体が比較的少ない手順で実施できることが重要である。また計画次第では，並行運用本番移行など，システム導入計画自体の見直しが必要となる場合もある。切り戻し計画自体は，開発リーダー主体で作成しても，デジタル経営推進者・運用リーダー含む関係者全体で検討・合意する必要がある。したがって解答1が正解。解答2は誤り。切り戻し計画は，システムだけでなく在庫移動などの現場作業にも影響があり，開発リーダーだけでなく，デジタル経営推進者・運用リーダー含む関係者全体で検討・合意する必要がある。解答3は誤り。切り戻し計画は，システムだけでなく在庫移動などの現場作業にも影響があり，開発リーダーだけでなく，デジタル経営推進者・運用リーダー含む関係者全体で検討・合意する必要がある。解答4は誤り。本番切替後の切り戻し計画は，本番移行時の切り戻し計画（移行作業を中断し元の状態に戻す）とは異なり，機能（作業）単位で切り戻し範囲を決めるなど，より複雑な計画と手順が必要となる。デジタル経営推進者だけでなく，開発リーダー・運用リーダー含む関係者全体で検討・合意する必要がある。", "level": "応用", "category": "価値実現", "topic": "IT導入"}, {"id": 19, "prompt": "A社では，経営改革プロジェクトを実施中である。業務部門が業務面，システム部門がシステム面をそれぞれ主管し，全般事項は両部門で協議している。情報システムは，外部のサービス開発・提供者B社のSaaSを全面的に利用する予定である。完成後のITサービスの効果を継続的に改善していくために必要な仕組みはどれか。", "choices": ["B社に専門的な観点から測定指標の設定とモニタリングの実施を依頼し，測定結果とともにサービス改善策を報告させる。", "業務部門が測定指標を定め，モニタリング結果に基づいてシステム部門へのサービス改善要求に反映させる。", "業務部門とシステム部門で測定指標を定めてモニタリングを行い，B社へのサービス改善要求に反映させる。", "システム部門とB社が協力して，測定指標を定めてモニタリングを行い，両者の定期ミーティングでサービス改善策を検討する。"], "correct": 3, "explanation": "SLMとして，ITサービスの提供先である業務部門とITサービス提供部門であるシステム部門が協力し合い，業務改革の目標を達成するために，あらかじめ定められたSLAに基づき評価を行い，必要に応じて業務やITサービスの改善などの対策を行うが重要である (ITコーディネータプロセスガイドライン第3部3章P5-3-タスク1-②)。したがって解答3 が正解。解答1は誤り。“ITサービス提供の実態がアウトソーシングされている場合でも，SLM推進の責任は導入企業にある”べきなのに，この場合B社に全て任せている。(ITコーディネータプロセスガイドライン第3部3章P5-3-タスク1の留意点) 解答2は誤り。ITサービス利用部門(業務部門)が主導をとるのは良いが，ITサービス提供部門(システム部門)との協力関係による共同作業のもとSLMの仕組みを作ることが必要である。解答4は誤り。システム部門とB社だけで測定の仕組み構築，指標策定及び改善策検討を実施するのでは，ステークホルダー全体の意思を汲み切れない。", "level": "応用", "category": "価値実現", "topic": "価値提供・運用"}, {"id": 20, "prompt": "A社は，受注管理業務の効率を向上させるワークフローシステムを半年前に導入した。利用部門の一部では，お客様の短納期要求に応えるために，決裁権限者から口頭で受注の承認を受けている。その後，システムで決裁処理をする前に，協力会社に作業を実施させることが常態化していることが判明した。システム処理だと協力会社への発注が間に合わないという理由であった。A社が実施すべき内容はどれか。", "choices": ["発注処理まで含めた業務プロセス全体を見直し，利用部門が無理なくシステムを利用できるようにする。", "利用部門に対してワークフローシステムの利用方法を説明し，ただちに使用するように指導する。", "ワークフローシステムの受注決裁処理を優先させ，発注処理を遅らせるように利用部門へ依頼する。", "ワークフローシステムを業務の流れに合わせるように，ITサービス提供部門にシステムの変更を依頼する。"], "correct": 1, "explanation": "業務工程や手順の検証は，組織の効率性向上や品質改善に向けて重要な活動である。定期的な検証を行い，業務プロセスの最適化と持続的な改善を進めることで，組織のパフォーマンスを向上させることができる(ITコーディネータプロセスガイドライン第3部第4章P6-2-2-留意点)。したがって解答1が正解。解答2は誤り。業務とシステムの整合性が合っていない場合は，無理にシステムを利用させるのは適切ではない。解答3は誤り。業務プロセスをITサービスに無理に合わせることは，業務遂行上問題が起きる。この場合，顧客からの要望に応えられない状況となり，適切ではない。解答4は誤り。全体最適を考慮すべきであり，安易にシステムの変更を依頼すべきではない。また，業務工程や手順が最適でない場合，システムを導入することで，逆に効率が悪くなる場合もある。", "level": "応用", "category": "価値実現", "topic": "提供価値検証"}, {"id": 21, "prompt": "製造業A社では，基幹業務システムの再構築を行っている。IT開発・導入プロセスで，デジタル経営実行計画プロセスで決定したアウトソーシングの具体化が検討されている。しかし，IT開発・導入プロセスの主要メンバである情報センター長B氏が，情報センターの存在意義がなくなるとして，検討の大幅な見直しを求めてきた。サイクルマネジメントの責任者であるデジタル経営推進者が実施すべき対応はどれか。", "choices": ["IT開発・導入プロセスの関係者の調整のために，役員会でデジタル経営実行計画を再検討する。", "IT開発・導入プロセスの主要メンバーB氏の意見を尊重し，情報センタの利活用を優先する。", "IT開発・導入プロセスの遂行に向け，組織の利害を越えて協力するようにB氏を説得する。", "IT開発・導入プロセスを円滑に統制するために，B氏を当該プロセスのメンバーから外す。"], "correct": 3, "explanation": "サイクルマネジメントの責任者は，プロセスの実行状況を把握し，プロセスの実行中に問題が発生した場合は，適切な支援を行う（ITコーディネータプロセスガイドライン第 4部第1章CB1-2-タスク3)。本問の情報センター長は，今後のプロセス遂行に不可欠な人材であり，説得する必要がある。したがって解答3が正解。解答1は誤り。IT開発・導入プロセスの段階では，いち情報センター長の反対でデジタル経営実行計画を再検討するまで戻ることは考えられない。また，関係者との調整には時間も手数も必要となり，現実的ではない。解答2は誤り。IT開発・導入プロセスの段階では，いち情報センター長の反対でデジタル経営実行計画を再検討するまで戻ることは考えられない。主要メンバーの意見だからという理由で取り上げるべきではない。解答4は誤り。反対者を単にメンバーから外しても根本的な解決にはつながらない。情報センター長は，今後のプロセス遂行に不可欠な人材であり，協力を求め説得する必要がある。", "level": "応用", "category": "共通基盤", "topic": "サイクルマネジメント"}, {"id": 22, "prompt": "A社は中長期の視点で業務改善を実施することになった。最初に，部門の課題を漏れなく把握するために，経営企画室が事務局となって各部門にアンケート調査を実施したところ，意見は少なく偏った結果となった。部門合同で実施することになった課題検討会議の効果的な進め方はどれか。", "choices": ["意見が出ないことが予想されるので，アンケート調査結果から絞り込んだ重点課題候補を提示する。", "各部門が持ち寄った課題を発表し，体系的に整理しながら，重点課題について合意の形成を図る。", "課題の網羅性と会議の効率性に鑑み，アンケート調査から漏れた課題を採り上げ，重点的に議論する。", "客観的視点をもつコンサルタントに進行を依頼し，アンケート調査から重点課題を提示してもらう。"], "correct": 2, "explanation": "ステークホルダーに明確な役割と責任を与え，自分の役割と責任を自覚したコミュニケーションを行うようにする(PGL第4部第2章CB2-2-タスク3)。本問では業務改善に向け，部門の課題を漏れなく把握するために各部門が主体的に課題を持ち寄ることがステイクホルダーの役割と責任である。さらに部門合同課題検討会議での意思決定の効率化にも繋がる(ITコーディネータプロセスガイドライン第4部第2章CB2-2-タスク3-留意点: 役割と責任を明確化する目的-b)。したがって解答2が正解。解答1は誤り。事務局側で予め重点課題を提示すると新たな意見が出しづらくなり，ベストな会議運営のやり方ではない。解答3は誤り。課題の網羅性は考慮すべきだが，効率性のために“アンケート調査から漏れた課題”のみを採り上げるのは誤りである。両者の課題を含め，総合的に採り上げるべきである。解答4は誤り。コンサルタントはファシリテーターとして，聞き出し，まとめ，合意の推進役に徹する。", "level": "応用", "category": "共通基盤", "topic": "コミュニケーション"}, {"id": 23, "prompt": "中堅の製造業A社では，生産管理システムを再構築し，移行後1年が経過した。フォローアップとして実施した〈モニタリングの結果〉に対して，採るべき施策はどれか。〈モニタリングの結果〉 ①課題であった生産リードタイムの短縮と納期遅れ件数の削減は予定どおり実現されている。 ②システムについてのトラブルやクレームも移行後2か月程度は発生していたが，運用方法を見直した結果，現在は順調に稼働している。 ③移行後のトラブルはすべて解決済みで，特に問題は発生していないが，当時の担当者が転職してしまい，関連資料は所在不明で確認できなかった。", "choices": ["運用面において想定されるリスクを識別し，更なるシステムの安定運用体制の確立と文書管理の改善を図る。", "今後のビジネス環境の変化に対応していけるよう，IT投資の予算枠の追加を確保して継続的な改善を進める。", "システム導入の初期の目的が達成され，稼働も安定していることから，運用費削減に向けての取組に着手する。", "システムの障害が発生するリスクに備えて代替機を調達し，切替えの訓練と稼働テストを定期的に実施する。"], "correct": 1, "explanation": "パフォーマンスのモニタリングには，継続的なモニタリング＆コントロールと定期的なモニタリング＆コントロールがある。これらに加えて第三者機関による監査や法令・規制の遵守，内部統制の改善等，特定の目的や対象を評価する必要がある場合に有効な「独立モニタリング」がある(ITコーディネータプロセスガイドライン第4部第3章CB3- 2-タスク②)。〈モニタリングの結果〉で挙げられた状況における最大のリスクは関連資料の所在不明であり，とるべき施策は内部統制の改善である。したがって，これに対する是正措置を含んでいる解答1が正解。解答2は誤り。モニタリング結果1から，当面の課題は達成されており，今後のビジネス環境変化を想起させる報告もなく，改善のために新たなIT投資を必要とする段階とは考えられない。解答3は誤り。モニタリング結果③から，現段階で問題は起きていないとは言いながら，リスク要因は残されており，コスト最小化よりも運用面の改善が優先課題である。解答4は誤り。確かにトラブルに備える現実的な対応であるが，モニタリング結果から想起される安定運用のための施策ではない。", "level": "応用", "category": "共通基盤", "topic": "モニタリング＆コントロール"}, {"id": 24, "prompt": "A社は，サービス事業者によるSaaSを利用して受注システムの再構築を検討している。事業者の情報セキュリティ対策を評価する場合，可用性に該当する評価項目はどれか。", "choices": ["災害時や障害時におけるシステム停止時間の予測と対策は明確か。", "情報漏えいを防ぐための適切なデータ保護管理を実施しているか。", "脆弱性が存在しないことを確認する定期的検査を実施しているか。", "預託データの整合性検証について対策が施され，再利用が可能か。"], "correct": 1, "explanation": "情報セキュリティとは，情報の機密性，完全性及び可用性を維持することである。機密性（confidentiality）：情報へのアクセスを認められた者だけが，その情報にアクセスできる状態を確保すること。完全性（integrity）：情報が破壊，改ざん又は消去されていない状態を確保すること。可用性（availability）：情報へのアクセスを認められた者が，必要時に中断することなく，情報及び関連資産にアクセスできる状態を確保すること（JIS Q 27000:2019）。災害時や障害時に必要な情報に中断することなく，情報及び関連資産にアクセスできる状態を確保する可用性の評価項目である。したがって解答1が正解。解答2は誤り。情報にアクセスできる状態を確保する機密性の評価項目である。解答3は誤り。脆弱性が存在せず，情報へのアクセスを認められた者だけがアクセスできる情報を確保する機密性の評価項目である。解答4は誤り。預託データが破壊，改ざん又は消去されていない状態を確保する完全性の評価項目である。", "level": "応用", "category": "共通基盤", "topic": "セキュリティ"}, {"id": 25, "prompt": "組織の知を創造し応用するには，継続的な学習プロセスを回し，組織学習のレベルを上げていくことが重要である。“暗黙知の形式知化”および“形式知の内面化”の双方に有効なものはどれか。", "choices": ["社内研修", "ストーリーテリング", "ナレッジマネジメントシステムの利活用", "プロジェクトにおける経験"], "correct": 1, "explanation": "個人の「暗黙知」を組織共有の「形式知」に変え，それらを「連結」し新たな知として応用し，再度，個人の暗黙知として取り込む「内面化」プロセスを繰り返すことにより，組織学習のレベルを上げていく。（ITコーディネータプロセスガイドライン CB5- 2-2)社内研修は「暗黙知の形式知化」および「形式知の内面化」双方に有効である（IT コーディネータプロセスガイドライン第4部第5章 CB5-2-タスク2-⑤）。したがって解答1が正解。解答2は誤り。ストーリーテリングは「暗黙知の形式知化」に有効であるが，「形式知の内面化」に有効とは言えない。（ITコーディネータプロセスガイドライン第4部第5 章 CB5-2-タスク2-②）解答3は誤り。ナレッジマネジメントシステムの利活用は「形式知の共有と連結化」「形式知の内面化」に有効であるが，「暗黙知の形式知化」に有効とは言えない。（IT コーディネータプロセスガイドライン第4部第5章 CB5-2-タスク2-③⑤）解答4は誤り。プロジェクトにおける経験は「個々人の学びによる暗黙知の獲得」に有効であるが，「暗黙知の形式知化」および「形式知の内面化」に有効とは言えない。（ITコーディネータプロセスガイドライン第4部第5章 CB5-2-タスク2-1）", "level": "応用", "category": "共通基盤", "topic": "組織学習"}];
+const KEY="itc-answers-v1", GATE_KEY="itc-kakomon-gate";
+const PW_HASH="5e268362eb9559f626d7eddb585fd637f6ad9249ffb04db0dfc658631c2c3a47";
+async function sha256(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
+const $=id=>document.getElementById(id);
+let current=0, answers={}, N=QUESTIONS.length;
+try{answers=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){answers={}}
+function save(){localStorage.setItem(KEY,JSON.stringify(answers))}
+function doneCount(){return Object.keys(answers).length}
+function correctCount(){return QUESTIONS.filter(q=>answers[q.id]===q.correct).length}
+function show(id){["gate","app","result"].forEach(x=>$(x).classList.toggle("hidden",x!==id))}
+
+$("gateForm").addEventListener("submit",async e=>{e.preventDefault();
+  if(await sha256($("pw").value)===PW_HASH){sessionStorage.setItem(GATE_KEY,"1");show("app");render()}
+  else{$("gateErr").textContent="パスワードが違います";$("pw").select()}});
+if(sessionStorage.getItem(GATE_KEY)==="1"){show("app");render()}
+
+function render(){
+  const q=QUESTIONS[current], a=answers[q.id], done=doneCount();
+  $("doneN").textContent=done; $("totalN").textContent=N; $("barFill").style.width=(done/N*100)+"%";
+  $("tLevel").textContent=q.level; $("tCat").textContent=q.category; $("qnum").textContent=q.id+" / "+N;
+  $("topic").textContent=q.topic; $("prompt").textContent=q.prompt;
+  const dots=$("dots"); dots.innerHTML="";
+  QUESTIONS.forEach((x,i)=>{const b=document.createElement("button");b.className="qdot"+(i===current?" active":"")+(answers[x.id]?" done":"");
+    b.textContent=answers[x.id]?(answers[x.id]===x.correct?"✓":"✕"):x.id;b.onclick=()=>{current=i;render()};dots.appendChild(b)});
+  const ch=$("choices"); ch.innerHTML="";
+  q.choices.forEach((c,i)=>{const n=i+1,sel=a===n,cor=n===q.correct;
+    const l=document.createElement("label");l.className="choice"+(a?(cor?" correct":sel?" wrong":" muted")+" locked":"");
+    l.innerHTML=`<input type="radio" name="c" value="${n}" ${sel?"checked":""} ${a?"disabled":""}><span class="choice-num">${n}</span><span class="t"></span><span class="mark">${a&&cor?"✓":a&&sel&&!cor?"✕":""}</span>`;
+    l.querySelector(".t").textContent=c;
+    l.querySelector("input").addEventListener("change",()=>{if(!answers[q.id]){answers[q.id]=n;save();render()}});
+    ch.appendChild(l)});
+  const fb=$("feedback");
+  if(a){fb.className="feedback "+(a===q.correct?"ok":"ng");fb.innerHTML=`<div class="head">${a===q.correct?"✓ 正解です！":"✕ 不正解です。正解は「"+q.correct+"」"}</div><p></p>`;fb.querySelector("p").textContent=q.explanation}
+  else{fb.className="hidden";fb.innerHTML=""}
+  $("prevBtn").disabled=current===0;
+  const last=current===N-1;
+  $("nextBtn").classList.toggle("hidden",last); $("finishBtn").classList.toggle("hidden",!last); $("finishBtn").disabled=done<N;
+  $("unanswered").classList.toggle("hidden",!(last&&done<N)); $("unanswered").textContent=`未回答が${N-done}問あります`;
+  window.scrollTo({top:0});
+}
+function renderResult(){
+  const c=correctCount(); $("rScore").textContent=c; $("rTotal").textContent="/ "+N+"問"; $("rRate").textContent="正答率 "+Math.round(c/N*100)+"%";
+  const stats=[...new Set(QUESTIONS.map(q=>q.category))].map(cat=>{const g=QUESTIONS.filter(q=>q.category===cat),ok=g.filter(q=>answers[q.id]===q.correct).length;return{cat,ok,total:g.length,rate:Math.round(ok/g.length*100)}}).sort((x,y)=>x.rate-y.rate);
+  const s=$("stats"); s.innerHTML="";
+  stats.forEach((st,i)=>{const d=document.createElement("div");d.className="stat";
+    d.innerHTML=`<div class="row"><div><span style="font-weight:700">${st.cat}</span>${i===0?'<span class="badge">重点復習</span>':""}</div><b>${st.ok}/${st.total}問 <span>(${st.rate}%)</span></b></div><div class="track"><i class="${i===0?"weak":""}" style="width:${st.rate}%"></i></div>`;s.appendChild(d)});
+  $("weakName").textContent=stats[0].cat;
+  show("result"); window.scrollTo({top:0});
+}
+function reset(){if(confirm("回答履歴をすべて消して、最初からやり直しますか？")){answers={};current=0;localStorage.removeItem(KEY);show("app");render()}}
+$("prevBtn").onclick=()=>{current--;render()};
+$("nextBtn").onclick=()=>{current++;render()};
+$("finishBtn").onclick=renderResult;
+$("reviewBtn").onclick=()=>{const i=QUESTIONS.findIndex(q=>answers[q.id]!==q.correct);current=i<0?0:i;show("app");render()};
+["resetSide","resetTop","resetBottom"].forEach(id=>$(id).onclick=reset);
+document.addEventListener("keydown",e=>{if($("app").classList.contains("hidden")||e.target.tagName==="INPUT")return;
+  if(e.key==="ArrowRight"&&current<N-1){current++;render()}
+  if(e.key==="ArrowLeft"&&current>0){current--;render()}
+  if(/^[1-4]$/.test(e.key)){const q=QUESTIONS[current];if(!answers[q.id]&&Number(e.key)<=q.choices.length){answers[q.id]=Number(e.key);save();render()}}});
+</script>
+</body>
+</html>
