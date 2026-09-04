@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>サイクル×プロセス連携ドリル</title>
+<style>
+  :root{
+    --bg:#f2efe9;
+    --card:#ffffff;
+    --ink:#1f2a24;
+    --sub:#6b7268;
+    --accent:#1f3d2c;
+    --accent2:#7fae94;
+    --ok-bg:#e8f3ec;
+    --ok-border:#3f8f63;
+    --ng-bg:#fbeae7;
+    --ng-border:#c1503b;
+    --line:#e4dfd4;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+  }
+  .wrap{max-width:900px;margin:0 auto;padding:20px 16px 60px;}
+  .kicker{font-size:12px;letter-spacing:.12em;color:var(--accent2);font-weight:700;}
+  h1{font-size:22px;margin:4px 0 2px;}
+  .progressbar{height:4px;background:var(--line);border-radius:4px;margin:14px 0 20px;overflow:hidden;}
+  .progressbar > div{height:100%;background:var(--accent);transition:width .3s;}
+  .layout{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;}
+  .side{width:220px;flex-shrink:0;}
+  .qgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+  .qcell{
+    aspect-ratio:1/1;
+    border-radius:8px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:600;
+    background:var(--card);
+    border:1px solid var(--line);
+    color:var(--sub);
+    cursor:pointer;
+  }
+  .qcell.correct{background:var(--ok-bg);color:var(--ok-border);border-color:var(--ok-border);}
+  .qcell.wrong{background:var(--ng-bg);color:var(--ng-border);border-color:var(--ng-border);}
+  .qcell.current{outline:2px solid var(--accent);outline-offset:1px;}
+  .reset-link{margin-top:14px;font-size:13px;color:var(--sub);text-decoration:underline;cursor:pointer;}
+  .main{flex:1;min-width:280px;}
+  .card{background:var(--card);border-radius:16px;padding:26px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  .qno{font-size:12px;color:var(--sub);margin-bottom:8px;}
+  .prompt{font-size:19px;line-height:1.6;font-weight:700;margin-bottom:22px;}
+  .opt{
+    display:flex;align-items:center;gap:12px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px 16px;margin-bottom:10px;
+    cursor:pointer;
+    font-size:15px;
+    line-height:1.5;
+    transition:background .15s;
+  }
+  .opt:hover{background:#f8f6f1;}
+  .opt .badge{
+    width:26px;height:26px;border-radius:50%;
+    background:#eee;color:#666;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:700;flex-shrink:0;
+  }
+  .opt.correct{background:var(--ok-bg);border-color:var(--ok-border);}
+  .opt.correct .badge{background:var(--ok-border);color:#fff;}
+  .opt.wrong{background:var(--ng-bg);border-color:var(--ng-border);}
+  .opt.wrong .badge{background:var(--ng-border);color:#fff;}
+  .opt.disabled{cursor:default;}
+  .mark{margin-left:auto;font-size:16px;}
+  .feedback{
+    margin-top:18px;padding:16px 18px;border-radius:12px;
+    font-size:14px;line-height:1.7;
+  }
+  .feedback.ok{background:var(--ok-bg);border:1px solid var(--ok-border);color:#20492f;}
+  .feedback.ng{background:var(--ng-bg);border:1px solid var(--ng-border);color:#5e2418;}
+  .feedback .ftitle{font-weight:700;margin-bottom:6px;}
+  .hint{
+    margin-top:10px;font-size:13px;color:var(--sub);
+    background:#f8f6f1;border-radius:10px;padding:10px 14px;
+  }
+  .nav{display:flex;justify-content:space-between;margin-top:20px;}
+  .nav button{
+    padding:10px 20px;border-radius:10px;border:1px solid var(--line);
+    background:var(--card);font-size:14px;cursor:pointer;color:var(--ink);
+  }
+  .nav button.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .nav button:disabled{opacity:.4;cursor:default;}
+  .summary{text-align:center;padding:40px 20px;}
+  .summary .score{font-size:48px;font-weight:800;color:var(--accent);margin:10px 0;}
+  @media (max-width:640px){
+    .layout{flex-direction:column;}
+    .side{width:100%;}
+    .qgrid{grid-template-columns:repeat(8,1fr);}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker">IT COORDINATOR</div>
+  <h1>サイクル×プロセス連携ドリル</h1>
+  <div style="font-size:13px;color:var(--sub);" id="subtitle"></div>
+  <div class="progressbar"><div id="progressFill" style="width:0%"></div></div>
+
+  <div class="layout">
+    <div class="side">
+      <div style="font-size:11px;letter-spacing:.1em;color:var(--sub);font-weight:700;margin-bottom:8px;">QUESTIONS</div>
+      <div class="qgrid" id="qgrid"></div>
+      <div class="reset-link" id="resetLink">回答をリセット</div>
+    </div>
+    <div class="main" id="main"></div>
+  </div>
+</div>
+
+<script>
+const QUESTIONS = [
+{"id":"q1","prompt":"デジタル経営成長サイクルは、次のうちどの2つのプロセスで構成されているか。","options":[{"id":"a","text":"変革・成長プロセスと、デジタル経営戦略プロセス"},{"id":"b","text":"デジタル経営実行計画プロセスと、IT開発・導入プロセス"},{"id":"c","text":"価値提供・運用プロセスと、提供価値検証プロセス"},{"id":"d","text":"デジタル経営戦略プロセスと、デジタル経営実行計画プロセス"}],"correct":"a","explanation":"デジタル経営成長サイクル（C1）は「変革・成長プロセス（P1）」と「デジタル経営戦略プロセス（P2）」の2つだけで構成されます。まずここを固定しましょう。","hint":"サイクルは「発想・戦略」を担う側と「実行・検証」を担う側の2つに大きく分かれます。こちらは前者です。"},
+{"id":"q2","prompt":"価値実現サイクルは、次のうちどの4つのプロセスで構成されているか。","options":[{"id":"a","text":"デジタル経営実行計画、IT開発・導入、価値提供・運用、提供価値検証"},{"id":"b","text":"変革・成長、デジタル経営戦略、デジタル経営実行計画、IT開発・導入"},{"id":"c","text":"IT開発・導入、価値提供・運用、提供価値検証、デジタル経営戦略"},{"id":"d","text":"変革・成長、IT開発・導入、価値提供・運用、提供価値検証"}],"correct":"a","explanation":"価値実現サイクル（C2）は「実行計画→開発・導入→提供・運用→検証」の4プロセス（P3〜P6）。変革・成長やデジタル経営戦略はここには含まれません（それはC1側）。","hint":"こちらは「実行して、検証する」側のサイクルです。戦略系の2プロセスは含まれません。"},
+{"id":"q3","prompt":"変革・成長プロセスで作成された「変革構想書」や「デジタル経営成熟度の目標」は、次のどのプロセスへのインプットとなるか。","options":[{"id":"a","text":"デジタル経営戦略プロセス"},{"id":"b","text":"デジタル経営実行計画プロセス"},{"id":"c","text":"IT開発・導入プロセス"},{"id":"d","text":"提供価値検証プロセス"}],"correct":"a","explanation":"変革・成長プロセス（P1）→デジタル経営戦略プロセス（P2）が、成長サイクル内での唯一の連携です。P1は「気づき・意思決定」、P2は「それを戦略に落とし込む」役割分担。","hint":"同じサイクル（成長サイクル）の中で、もう一方のプロセスに渡ります。"},
+{"id":"q4","prompt":"デジタル経営戦略プロセスで策定された「経営戦略企画書」「中期経営計画書」は、次にどこへ渡されて実行に移されるか。","options":[{"id":"a","text":"価値実現サイクル（実行計画を立てるプロセス）"},{"id":"b","text":"変革・成長プロセス"},{"id":"c","text":"モニタリング＆コントロール"},{"id":"d","text":"組織学習"}],"correct":"a","explanation":"ここが2つのサイクルの「橋」です。デジタル経営戦略プロセス（P2）で決めた方針が、価値実現サイクル（C2）のデジタル経営実行計画プロセス（P3）に渡り、具体的な実行計画になります。","hint":"戦略を「絵に描いた餅」で終わらせず、実際に動かすフェーズへ渡します。"},
+{"id":"q5","prompt":"価値実現サイクルの実行結果（デジタル経営戦略の達成状況）は、最終的にどのプロセスへフィードバックされるか。","options":[{"id":"a","text":"デジタル経営戦略プロセス"},{"id":"b","text":"変革・成長プロセス"},{"id":"c","text":"IT開発・導入プロセス"},{"id":"d","text":"モニタリング＆コントロール"}],"correct":"a","explanation":"実行して終わりではなく、価値実現サイクル（C2）全体の結果はデジタル経営戦略プロセス（P2）に戻ります。これが「次の戦略づくり」のための材料になります。","hint":"「地図」でいうと、下から上に戻ってくる矢印の行き先です。"},
+{"id":"q6","prompt":"デジタル経営戦略プロセスで行われた「戦略達成度の評価結果」は、次にどのプロセスへ引き継がれ、次の変革構想のインプットとなるか。","options":[{"id":"a","text":"変革・成長プロセス"},{"id":"b","text":"デジタル経営実行計画プロセス"},{"id":"c","text":"提供価値検証プロセス"},{"id":"d","text":"サイクルマネジメント"}],"correct":"a","explanation":"評価結果はさらに変革・成長プロセス（P1）へ引き継がれ、「次の変革はどうする？」の材料になります。これで大きな輪が一周し、また新しい変革構想が始まります。","hint":"Q5で戻ってきた先から、さらにもう一段階、上流のプロセスに戻ります。"},
+{"id":"q7","prompt":"価値実現サイクルの基本的な実行順序として正しいものはどれか。","options":[{"id":"a","text":"実行計画を立てる → 開発・導入する → 価値を提供・運用する → 提供した価値を検証する"},{"id":"b","text":"開発・導入する → 実行計画を立てる → 検証する → 運用する"},{"id":"c","text":"検証する → 実行計画を立てる → 開発する → 運用する"},{"id":"d","text":"運用する → 開発・導入する → 実行計画を立てる → 検証する"}],"correct":"a","explanation":"「計画→開発→運用→検証」の順番です。「作ってから計画する」「運用してから作る」のような逆転パターンはすべて誤りの選択肢としてよく出ます。","hint":"常識的な仕事の流れと同じで、まず計画を立ててから手を動かします。"},
+{"id":"q8","prompt":"提供価値検証プロセスの結果、「そもそも実行計画自体に問題があった」と判明した場合、見直すべきプロセスはどれか。","options":[{"id":"a","text":"デジタル経営実行計画プロセス"},{"id":"b","text":"IT開発・導入プロセス"},{"id":"c","text":"価値提供・運用プロセス"},{"id":"d","text":"デジタル経営戦略プロセス"}],"correct":"a","explanation":"検証プロセスからのフィードバック先は問題の性質によって3通りに分かれます。「計画自体が違った」なら、一番上流の実行計画プロセスまで戻して立て直します。","hint":"問題の根っこが「計画」にあるなら、戻す先も「計画」です。"},
+{"id":"q9","prompt":"提供価値検証プロセスの結果、「機能が足りない・不具合がある」と判明し、素早い機能改修や追加開発が必要な場合、フィードバックすべきプロセスはどれか。","options":[{"id":"a","text":"IT開発・導入プロセス"},{"id":"b","text":"デジタル経営実行計画プロセス"},{"id":"c","text":"デジタル経営戦略プロセス"},{"id":"d","text":"変革・成長プロセス"}],"correct":"a","explanation":"計画は間違っていないが「作り」に問題がある場合は、開発・導入プロセスに戻して機能改修や追加開発を行います。Q8との違い（計画の問題か、作りの問題か）を意識してください。","hint":"問題の根っこが「モノ」にあるなら、戻す先も「モノを作る」プロセスです。"},
+{"id":"q10","prompt":"デジタル経営共通基盤の一つである「サイクルマネジメント」が主な対象とするのはどのサイクルか。","options":[{"id":"a","text":"価値実現サイクル"},{"id":"b","text":"デジタル経営成長サイクル"},{"id":"c","text":"両方のサイクルを完全に等しく対象とする"},{"id":"d","text":"どのサイクルにも属さない独立した活動"}],"correct":"a","explanation":"サイクルマネジメントは、実行計画〜検証までの4プロセス（価値実現サイクル）がスムーズに回るよう、プロセス間のボトルネックを解消する役割です。成長サイクルは「発想」の領域であり対象外、という位置づけがよく問われます。","hint":"「発想・戦略」側ではなく「実行・繰り返し」側のサイクルを最適化する役割です。"},
+{"id":"q11","prompt":"モニタリング＆コントロールで使うパフォーマンス指標（目標値）は、そもそもどのプロセスで定義されたものを「測定可能な形」に変換するのか。","options":[{"id":"a","text":"デジタル経営実行計画プロセス"},{"id":"b","text":"提供価値検証プロセス"},{"id":"c","text":"デジタル経営戦略プロセス"},{"id":"d","text":"IT開発・導入プロセス"}],"correct":"a","explanation":"モニタリング＆コントロールは指標を新しく作るのではなく、実行計画プロセスで定義された目標を「測定できる指標」に変換して使います。この「新規に作るのではなく、既にあるものを変換する」という関係がよく狙われます。","hint":"モニタリング＆コントロールは指標の「生みの親」ではなく「使う側」です。"},
+{"id":"q12","prompt":"モニタリング＆コントロールで収集・蓄積したデータの分析・評価・報告において、照合する対象として最も重視すべきなのは何か。","options":[{"id":"a","text":"価値実現サイクル全体としての進捗・目標との整合性"},{"id":"b","text":"個別プロセスの担当者の業務日報だけ"},{"id":"c","text":"デジタル経営戦略プロセスの企画書の文言だけ"},{"id":"d","text":"IT開発・導入プロセスの進捗だけ"}],"correct":"a","explanation":"モニタリング＆コントロールは「部分（個別プロセス）」ではなく「全体（サイクル）」が計画どおり進んでいるかを照合するのが本質です。","hint":"「部分」ではなく「全体」で照合するのがポイントでした。"},
+{"id":"q13","prompt":"IT開発・導入プロセスは、次のどの2つのアクティビティで構成されるか。","options":[{"id":"a","text":"IT開発と、IT導入"},{"id":"b","text":"開発計画と、導入計画"},{"id":"c","text":"価値提供と、ITサービス運用"},{"id":"d","text":"実行計画と、評価"}],"correct":"a","explanation":"IT開発・導入プロセスは「IT開発」と「IT導入」の2アクティビティ。開発したものを実際に環境へ配備・展開して使えるようにするところまでがセットです。","hint":"「作る」だけでなく「使える状態にする」までがこのプロセスの範囲です。"},
+{"id":"q14","prompt":"価値提供・運用プロセスは、次のどの2つのアクティビティで構成されるか。","options":[{"id":"a","text":"IT利活用による価値の提供と、ITサービス運用"},{"id":"b","text":"IT開発と、IT導入"},{"id":"c","text":"実行計画と、検証"},{"id":"d","text":"モニタリングと、コントロール"}],"correct":"a","explanation":"価値提供・運用プロセスは「IT利活用による価値の提供」と「ITサービス運用」の2アクティビティ。変革された業務・システムを実際に動かし、顧客に価値を届け続ける役割です。","hint":"「届ける」ことと「回し続ける」ことの2つがセットになっています。"},
+{"id":"q15","prompt":"IT開発・導入プロセスで開発・導入されたシステムは、次にどのプロセスで運用され、価値提供に使われるか。","options":[{"id":"a","text":"価値提供・運用プロセス"},{"id":"b","text":"提供価値検証プロセス"},{"id":"c","text":"デジタル経営実行計画プロセス"},{"id":"d","text":"デジタル経営戦略プロセス"}],"correct":"a","explanation":"「計画→開発・導入→提供・運用→検証」の順番どおり、開発・導入の次は価値提供・運用プロセスです。","hint":"基本の流れを思い出してください。開発・導入の次はどこでしたか。"},
+{"id":"q16","prompt":"価値実現サイクルの中で、デジタル経営推進者が主体的に進める（主担当となる）プロセスはどれか。","options":[{"id":"a","text":"デジタル経営実行計画プロセス"},{"id":"b","text":"IT開発・導入プロセス"},{"id":"c","text":"価値提供・運用プロセス"},{"id":"d","text":"どのプロセスも均等に主担当"}],"correct":"a","explanation":"デジタル経営推進者は実行計画プロセスを主体的に進め、IT開発・導入と価値提供・運用は開発リーダー・運用リーダーとそれぞれ協力して進めます（そちらの主担当は開発リーダー・運用リーダー）。","hint":"「計画を立てる」段階でリーダーシップを取る役割です。"},
+{"id":"q17","prompt":"提供価値検証プロセスは、次のうち誰が主担当（◎）として関わるか。","options":[{"id":"a","text":"デジタル経営推進者・開発リーダー・運用リーダーの3者すべて"},{"id":"b","text":"経営者のみ"},{"id":"c","text":"デジタル経営推進者のみ"},{"id":"d","text":"開発リーダーのみ"}],"correct":"a","explanation":"提供価値検証プロセスは、価値実現サイクルの中で唯一、3者（デジタル経営推進者・開発リーダー・運用リーダー）全員が主担当となるプロセスです。検証には計画・開発・運用すべての視点が必要だからです。","hint":"検証には「計画した人」「作った人」「運用した人」全員の視点が必要です。"},
+{"id":"q18","prompt":"サイクルマネジメントにおけるプロセスへの取り組み順序として正しいものはどれか。","options":[{"id":"a","text":"プロセス定義 → 文書化 → 実行 → 改善"},{"id":"b","text":"実行 → 定義 → 改善 → 文書化"},{"id":"c","text":"改善 → 実行 → 定義 → 文書化"},{"id":"d","text":"文書化 → 改善 → 定義 → 実行"}],"correct":"a","explanation":"サイクルマネジメント（CB-1）は「プロセス定義→プロセス文書化→プロセス実行→プロセス改善」の4タスク。定義せずに実行することはできません。","hint":"まず「何をするか決める」、次に「書き残す」、それから「やる」、最後に「良くする」という自然な順番です。"},
+{"id":"q19","prompt":"デジタル経営共通基盤の各アクティビティが共通して持つ3つのタスク構造として正しい順序はどれか。","options":[{"id":"a","text":"全体方式・ルールの設定 → プロセスへの実装 → 実行状況把握"},{"id":"b","text":"実行状況把握 → 全体方式・ルールの設定 → プロセスへの実装"},{"id":"c","text":"プロセスへの実装 → 実行状況把握 → 全体方式・ルールの設定"},{"id":"d","text":"全体方式・ルールの設定 → 実行状況把握 → プロセスへの実装"}],"correct":"a","explanation":"共通基盤（CB）の各アクティビティは「①全体方式・ルールの設定→②プロセスへの実装→③実行状況把握」を繰り返して成熟度を上げていきます。サイクルマネジメントもモニタリング＆コントロールも、この骨格に沿っています。","hint":"共通基盤（CB全体）に共通する骨格です。ルールを決める→現場に組み込む→様子を見る、の順です。"},
+{"id":"q20","prompt":"モニタリング＆コントロールの進め方として正しい順序はどれか。","options":[{"id":"a","text":"パフォーマンス指標の確認 → パフォーマンスのモニタリング → データの分析・評価 → 是正措置 → 結果の評価"},{"id":"b","text":"是正措置 → 指標の確認 → モニタリング → 分析・評価 → 結果の評価"},{"id":"c","text":"結果の評価 → 指標の確認 → モニタリング → 分析評価 → 是正措置"},{"id":"d","text":"モニタリング → 是正措置 → 指標の確認 → 分析評価 → 結果の評価"}],"correct":"a","explanation":"「指標を確認する→監視する→データを分析・評価する→問題があれば是正する→効果を評価する」の5タスク構成です。指標がないまま監視はできず、分析なしに是正はできません。","hint":"何を測るか決めないと監視できず、分析しないと直しようがない、という自然な順序です。"},
+{"id":"q21","prompt":"第三者機関による監査や法令・規制の遵守状況を評価する場合に有効なモニタリングの種類はどれか。","options":[{"id":"a","text":"独立モニタリング"},{"id":"b","text":"継続的モニタリング"},{"id":"c","text":"定期的モニタリング"},{"id":"d","text":"日常モニタリング"}],"correct":"a","explanation":"独立モニタリングは、継続的・定期的モニタリングではカバーしきれない、特定の目的（第三者監査、法令遵守等）を集中的に評価するためのものです。","hint":"社内の日常や定期チェックとは別に、外部の視点で見るタイプです。"},
+{"id":"q22","prompt":"日常のプロセスの中で、担当者自身やマネジメントが行うモニタリングを何と呼ぶか。","options":[{"id":"a","text":"継続的モニタリング"},{"id":"b","text":"定期的モニタリング"},{"id":"c","text":"独立モニタリング"},{"id":"d","text":"事後モニタリング"}],"correct":"a","explanation":"継続的モニタリング＆コントロールは日常業務の中で行うもの。ビジネス環境の変化等、日常では拾いきれない部分を補完するのが定期的モニタリングです。","hint":"「毎日・現場で」やるタイプです。「たまに・まとめて」やるタイプと区別しましょう。"},
+{"id":"q23","prompt":"デジタル経営実行計画プロセスで作成された実行計画は、次のどのプロセスのインプットとなるか。","options":[{"id":"a","text":"IT開発・導入プロセス"},{"id":"b","text":"デジタル経営戦略プロセス"},{"id":"c","text":"変革・成長プロセス"},{"id":"d","text":"モニタリング＆コントロール"}],"correct":"a","explanation":"実行計画プロセスの成果物（実行計画）は、次のIT開発・導入プロセスのインプットになります。上流のプロセスに戻るのではなく、下流に進む点に注意。","hint":"計画の次に来るプロセスです。"},
+{"id":"q24","prompt":"目標と実績の差異分析のために「証拠の特定」を行う際、あわせて作成すべきものは何か。","options":[{"id":"a","text":"評価方針・目標・評価精度・評価対象・評価技法等を含む評価計画"},{"id":"b","text":"中期経営計画書"},{"id":"c","text":"変革構想書"},{"id":"d","text":"コミュニケーション計画書"}],"correct":"a","explanation":"証拠の特定を誤ると差異分析自体が意味をなさなくなるため、評価方針・目標・評価精度・評価対象・評価技法・ツール等を明確にした評価計画をあわせて作成する必要があります。","hint":"「何を、どう証拠として扱うか」を決めるための計画書です。"},
+{"id":"q25","prompt":"モニタリング＆コントロールで是正措置やリスク対応策を報告する相手として適切なのは誰か。","options":[{"id":"a","text":"しかるべき意思決定者（経営者等）"},{"id":"b","text":"デジタル経営推進者のみ"},{"id":"c","text":"開発リーダーのみ"},{"id":"d","text":"運用リーダーのみ"}],"correct":"a","explanation":"リスクへの対応策・防止策の立案及び報告は、しかるべき意思決定者（経営者等）に対して、適時・公正・中立に行う必要があります。「デジタル経営推進者への報告」とする選択肢は誤りのひっかけとしてよく出ます。","hint":"「推進者」ではなく、もっと上の立場の人です。"}
+];
+
+const STORAGE_KEY = "itc_cycle_process_drill_v1";
+let state = loadState();
+let currentIndex = state.currentIndex || 0;
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return {answers:{}, currentIndex:0};
+}
+function saveState(){
+  state.currentIndex = currentIndex;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function renderGrid(){
+  const grid = document.getElementById('qgrid');
+  grid.innerHTML = '';
+  QUESTIONS.forEach((q,i)=>{
+    const cell = document.createElement('div');
+    const ans = state.answers[q.id];
+    let cls = 'qcell';
+    let label = (i+1).toString();
+    if(ans){
+      cls += ans.selected === q.correct ? ' correct' : ' wrong';
+      label = ans.selected === q.correct ? '✓' : '✕';
+    }
+    if(i === currentIndex) cls += ' current';
+    cell.className = cls;
+    cell.textContent = label;
+    cell.onclick = ()=>{ currentIndex = i; saveState(); render(); };
+    grid.appendChild(cell);
+  });
+}
+
+function renderProgress(){
+  const answered = Object.keys(state.answers).length;
+  document.getElementById('progressFill').style.width = (answered/QUESTIONS.length*100)+'%';
+  document.getElementById('subtitle').textContent = `${currentIndex+1} / ${QUESTIONS.length}問　（回答済み ${answered} 問）`;
+}
+
+function renderMain(){
+  const main = document.getElementById('main');
+  const q = QUESTIONS[currentIndex];
+  const ans = state.answers[q.id];
+
+  let optsHtml = '';
+  q.options.forEach((opt, idx)=>{
+    let cls = 'opt';
+    let mark = '';
+    if(ans){
+      cls += ' disabled';
+      if(opt.id === q.correct){ cls += ' correct'; mark = '✓'; }
+      else if(opt.id === ans.selected){ cls += ' wrong'; mark = '✕'; }
+    }
+    optsHtml += `<div class="${cls}" data-id="${opt.id}">
+      <div class="badge">${idx+1}</div>
+      <div>${opt.text}</div>
+      ${mark ? `<div class="mark">${mark}</div>` : ''}
+    </div>`;
+  });
+
+  let feedbackHtml = '';
+  if(ans){
+    const isCorrect = ans.selected === q.correct;
+    feedbackHtml = `<div class="feedback ${isCorrect?'ok':'ng'}">
+      <div class="ftitle">${isCorrect ? '○ 正解です' : '✕ 不正解です。正解は '+ (q.options.findIndex(o=>o.id===q.correct)+1)}</div>
+      ${q.explanation}
+    </div>`;
+  } else if(q.hint){
+    feedbackHtml = `<div class="hint">ヒント：${q.hint}</div>`;
+  }
+
+  main.innerHTML = `
+    <div class="card">
+      <div class="qno">第${currentIndex+1}問</div>
+      <div class="prompt">${q.prompt}</div>
+      <div id="optsWrap">${optsHtml}</div>
+      ${feedbackHtml}
+      <div class="nav">
+        <button id="prevBtn" ${currentIndex===0?'disabled':''}>← 前へ</button>
+        <button id="nextBtn" class="primary" ${currentIndex===QUESTIONS.length-1?'disabled':''}>次へ →</button>
+      </div>
+    </div>
+  `;
+
+  if(!ans){
+    main.querySelectorAll('.opt').forEach(el=>{
+      el.onclick = ()=>{
+        const selected = el.getAttribute('data-id');
+        state.answers[q.id] = {selected};
+        saveState();
+        render();
+      };
+    });
+  }
+  document.getElementById('prevBtn').onclick = ()=>{ if(currentIndex>0){currentIndex--; saveState(); render();} };
+  document.getElementById('nextBtn').onclick = ()=>{ if(currentIndex<QUESTIONS.length-1){currentIndex++; saveState(); render();} };
+}
+
+function render(){
+  renderGrid();
+  renderProgress();
+  renderMain();
+}
+
+document.getElementById('resetLink').onclick = ()=>{
+  if(confirm('回答をすべてリセットします。よろしいですか？')){
+    state = {answers:{}, currentIndex:0};
+    currentIndex = 0;
+    saveState();
+    render();
+  }
+};
+
+render();
+</script>
+</body>
+</html>
